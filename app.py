@@ -18,12 +18,20 @@ if st.button("Predict"):
     try:
         row = df[df['PROTEIN-LIGAND'] == selected_pair]
 
-       features = row[[ 
-                'Electrostatic energy', 
-                'Torsional energy', 
-                'vdw hb desolve energy', 
-                'Intermol energy'
+        features = row[[ 
+            'Electrostatic energy', 
+            'Torsional energy', 
+            'vdw hb desolve energy', 
+            'Intermol energy'
         ]]
+
+        features = features.fillna(0)
+
+        pred = model.predict(features)[0]
+        st.success(f"🧪 Predicted Binding Affinity: {pred:.2f} kcal/mol")
+
+    except Exception as e:
+        st.error(f"Something went wrong: {e}")
 
 
         features = features.fillna(0)

@@ -19,11 +19,11 @@ if st.button("Predict"):
         row = df[df['PROTEIN-LIGAND'] == selected_pair]
 
        features = row[[ 
-    'Electrostatic energy', 
-    'Torsional energy', 
-    'vdw hb desolve energy', 
-    'Intermol energy'
-]]
+                'Electrostatic energy', 
+                'Torsional energy', 
+                'vdw hb desolve energy', 
+                'Intermol energy'
+        ]]
 
 
         features = features.fillna(0)

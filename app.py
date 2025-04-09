@@ -6,10 +6,10 @@ import joblib
 df = pd.read_csv("Cleaned_Autodock_Results.csv")
 model = joblib.load("model.pkl")
 
-# Streamlit App Title
+# App title
 st.title("🔬 Binding Affinity Predictor")
 
-# Dropdown to select protein-ligand pair
+# Dropdown for protein-ligand pair
 selected_pair = st.selectbox("Choose Protein-Ligand Pair", df['PROTEIN-LIGAND'].unique())
 
 # Predict button
@@ -18,16 +18,16 @@ if st.button("Predict"):
         row = df[df['PROTEIN-LIGAND'] == selected_pair]
 
         features = row[[
-            'binding energy', 'cluster RMSD', 'reference RMSD',
-            'ligand efficiency', 'Internal energy', 
-            'vdw hb desolve energy', 'Electrostatic energy',
-            'Total internal', 'Torsional energy', 'unbound energy'
+            'binding energy', 
+            'Electrostatic energy', 
+            'Torsional energy', 
+            'vdw hb desolve energy', 
+            'Intermol energy'
         ]]
 
         features = features.fillna(0)
 
         pred = model.predict(features)[0]
-
         st.success(f"🧪 Predicted Binding Affinity: {pred:.2f} kcal/mol")
 
     except Exception as e:

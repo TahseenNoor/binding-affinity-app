@@ -4,7 +4,8 @@ import joblib
 
 # Load dataset and model
 df = pd.read_csv("Cleaned_Autodock_Results.csv")
-model = joblib.load("model.pkl")
+model = joblib.load("model_with_importance.pkl")
+
 
 # App title
 st.title("🔬 Binding Affinity Predictor + Smart Suggestions")

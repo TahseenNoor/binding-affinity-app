@@ -11,42 +11,56 @@ st.set_page_config(
 
 # ------------------------ CUSTOM CSS ------------------------
 st.markdown("""
-    <style>
-        body {
-            background-color: #0f0f0f;
-            color: #e0e0e0;
-            font-family: 'Segoe UI', sans-serif;
-        }
-        .main {
-            background-color: #0f0f0f;
-        }
-        .block-container {
-            padding-top: 2rem;
-            padding-bottom: 2rem;
-        }
-        .css-1v0mbdj, .stButton>button {
-            background-color: #222;
-            color: white;
-            border-radius: 10px;
-            transition: all 0.3s ease;
-        }
-        .stButton>button:hover {
-            background-color: #1a1a1a;
-            transform: scale(1.03);
-        }
-        .suggestion-card {
-            background-color: #1c1c1c;
-            padding: 1rem;
-            border-left: 5px solid #06d6a0;
-            margin-top: 20px;
-            border-radius: 10px;
-        }
-        .dna-icon {
-            height: 50px;
-            margin-right: 10px;
-        }
-    </style>
+<style>
+/* Biotech-inspired background */
+.stApp {
+    background: linear-gradient(135deg, #004d00, #003300);
+    background-image: radial-gradient(circle, rgba(0,255,128,0.1) 1px, transparent 1px),
+                      radial-gradient(circle, rgba(0,255,128,0.1) 1px, transparent 1px);
+    background-size: 40px 40px;
+    background-position: 0 0, 20px 20px;
+    color: white;
+    font-family: 'Segoe UI', sans-serif;
+}
+
+/* General button and block styling */
+.stButton>button {
+    background-color: #007a33;
+    color: white;
+    border-radius: 10px;
+    border: none;
+    padding: 0.5em 1.5em;
+    transition: all 0.3s ease;
+}
+.stButton>button:hover {
+    background-color: #005f26;
+    transform: scale(1.05);
+}
+
+/* Custom card for suggestions */
+.suggestion-card {
+    background-color: rgba(0, 0, 0, 0.4);
+    padding: 1rem;
+    border-left: 5px solid #33ff99;
+    border-radius: 12px;
+    margin-top: 20px;
+    color: white;
+}
+
+/* Custom green success */
+.stAlert.success {
+    background-color: rgba(0, 255, 100, 0.1);
+    border-left: 4px solid #00e676;
+    color: #b9ffcc;
+}
+
+h4 {
+    color: #66ffcc;
+}
+</style>
 """, unsafe_allow_html=True)
+
+
 
 # ------------------------ LOAD DATA ------------------------
 df = pd.read_csv("Cleaned_Autodock_Results.csv")

@@ -11,12 +11,18 @@ st.set_page_config(
 
 st.markdown("""
     <style>
-        .main {
-            background-image: url('https://wallpaperaccess.com/full/1923025.jpg');
-            background-size: cover;
-            background-position: center;
-            background-attachment: fixed;
-        }
+    html, body, [data-testid="stAppViewContainer"] {
+    background-color: #001a00;
+    background-image: 
+        linear-gradient(135deg, rgba(0, 255, 128, 0.05) 1px, transparent 1px),
+        linear-gradient(45deg, rgba(0, 255, 128, 0.05) 1px, transparent 1px);
+    background-size: 50px 50px;
+    color: white !important;
+}
+
+section.main > div {
+    padding-top: 2rem;
+}
         body {
             color: #e0e0e0;
             font-family: 'Segoe UI', sans-serif;

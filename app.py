@@ -9,18 +9,17 @@ st.set_page_config(
     page_icon="🧬"
 )
 
-# ------------------------ CUSTOM CSS ------------------------
 st.markdown("""
     <style>
+        .main {
+            background-image: url('https://wallpaperaccess.com/full/1923025.jpg');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+        }
         body {
-            background-color: #001a00;
             color: #e0e0e0;
             font-family: 'Segoe UI', sans-serif;
-        }
-        .main {
-            background: url('https://i.ibb.co/sWBtVXk/biotech-green-bg.png');
-            background-size: cover;
-            background-attachment: fixed;
         }
         .block-container {
             padding-top: 2rem;
@@ -57,6 +56,7 @@ st.markdown("""
         }
     </style>
 """, unsafe_allow_html=True)
+
 
 # ------------------------ HEADER ------------------------
 st.markdown("## 🧬 Binding Affinity Predictor")

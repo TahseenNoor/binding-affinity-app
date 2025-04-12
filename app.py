@@ -9,24 +9,24 @@ st.set_page_config(
     page_icon="🧬"
 )
 
-# ------------------------ CUSTOM CSS ------------------------
+# ------------------------ CUSTOM CSS WITH BACKGROUND IMAGE ------------------------
 st.markdown("""
 <style>
 html, body, [data-testid="stAppViewContainer"] {
     font-family: 'Palatino Linotype', serif;
-    color: black !important;
     background-image: url('image.png');
     background-size: cover;
-    background-attachment: fixed;
     background-repeat: no-repeat;
+    background-attachment: fixed;
     background-position: center;
+    color: black !important;
 }
 
+/* Overlay content for contrast */
 [data-testid="stAppViewContainer"] {
-    background-color: rgba(255, 255, 255, 0.8); /* White overlay with slight transparency */
+    background-color: rgba(255, 255, 255, 0.85);
     padding: 2rem;
     border-radius: 15px;
-    margin: 0 1rem;
 }
 
 h1, h2, h3, h4 {
@@ -140,6 +140,8 @@ with col2:
     This predictive step accelerates the drug development process ⏩ and reduces the cost of experimental screening 📉, making it a key tool
     in computational biology and cheminformatics 🖥️.
     """)
+
+
 
 
 

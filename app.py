@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import joblib
+import base64
 
 # ------------------------ PAGE CONFIG ------------------------
 st.set_page_config(
@@ -9,45 +10,52 @@ st.set_page_config(
     page_icon="🧬"
 )
 
-# ------------------------ CUSTOM CSS WITH BACKGROUND IMAGE ------------------------
-st.markdown("""
+# ------------------------ LOAD BACKGROUND IMAGE & CONVERT TO BASE64 ------------------------
+def get_base64(file_path):
+    with open(file_path, "rb") as f:
+        data = f.read()
+    return base64.b64encode(data).decode()
+
+img_base64 = get_base64("image.png")
+
+# ------------------------ CUSTOM CSS WITH EMBEDDED IMAGE ------------------------
+st.markdown(f"""
 <style>
-html, body, [data-testid="stAppViewContainer"] {
-    font-family: 'Palatino', serif;
-    background-image: url('image.png');
+html, body, [data-testid="stAppViewContainer"] {{
+    font-family: 'Palatino Linotype', serif;
+    background-image: url("data:image/png;base64,{img_base64}");
     background-size: cover;
     background-repeat: no-repeat;
     background-attachment: fixed;
     background-position: center;
     color: black !important;
-}
+}}
 
-/* Overlay content for contrast */
-[data-testid="stAppViewContainer"] {
+[data-testid="stAppViewContainer"] {{
     background-color: rgba(255, 255, 255, 0.85);
     padding: 2rem;
     border-radius: 15px;
-}
+}}
 
-h1, h2, h3, h4 {
+h1, h2, h3, h4 {{
     color: #2c2c2c;
     font-family: 'Palatino Linotype', serif;
-}
+}}
 
-.stButton>button {
+.stButton>button {{
     background-color: #6a5acd;
     color: white;
     font-weight: bold;
     border-radius: 10px;
     padding: 0.6em 1.5em;
     border: none;
-}
-.stButton>button:hover {
+}}
+.stButton>button:hover {{
     background-color: #836fff;
     transform: scale(1.02);
-}
+}}
 
-.suggestion-card {
+.suggestion-card {{
     background-color: #f8f8ff;
     padding: 1rem;
     border-left: 4px solid #6a5acd;
@@ -55,15 +63,15 @@ h1, h2, h3, h4 {
     margin-top: 20px;
     color: black;
     box-shadow: 0 0 10px rgba(0,0,0,0.08);
-}
+}}
 
-[data-testid="stMetric"] {
+[data-testid="stMetric"] {{
     background-color: #fff !important;
     border-radius: 12px;
     padding: 10px;
-}
+}}
 
-.prediction-highlight {
+.prediction-highlight {{
     background-color: #eee;
     padding: 1rem;
     border-left: 5px solid #6a5acd;
@@ -72,7 +80,7 @@ h1, h2, h3, h4 {
     font-size: 1.2rem;
     font-weight: bold;
     color: #2c2c2c;
-}
+}}
 </style>
 """, unsafe_allow_html=True)
 
@@ -113,7 +121,6 @@ with col1:
             feature_names = features.columns
             feature_impact = dict(zip(feature_names, importances))
 
-            # AI Suggestion Card
             st.markdown("<div class='suggestion-card'><h4>🧠 AI Suggestion:</h4>", unsafe_allow_html=True)
             sorted_feats = sorted(feature_impact.items(), key=lambda x: x[1], reverse=True)
             for feat, score in sorted_feats:
@@ -140,6 +147,8 @@ with col2:
     This predictive step accelerates the drug development process ⏩ and reduces the cost of experimental screening 📉, making it a key tool
     in computational biology and cheminformatics 🖥️.
     """)
+
+
 
 
 

@@ -13,7 +13,7 @@ st.set_page_config(
 st.markdown("""
 <style>
 html, body, [data-testid="stAppViewContainer"] {
-    font-family: 'Palatino Linotype', serif;
+    font-family: 'Palatino', serif;
     background-image: url('image.png');
     background-size: cover;
     background-repeat: no-repeat;

@@ -129,6 +129,24 @@ with col1:
 
         except Exception as e:
             st.error(f"Something went wrong: {e}")
+# --- ADMET ANALYSIS TAB ---
+with tabs[2]:
+    st.subheader("Molecule Properties and Druglikeness")
+    try:
+        url1 = "https://github.com/TahseenNoor/binding-affinity-app/raw/refs/heads/main/descriptors%20final.csv"
+        df1 = pd.read_csv(url1)
+        st.dataframe(df1)
+    except Exception as e:
+        st.error(f"Error loading data: {e}")
+
+    st.subheader("Pharmacokinetic Profile and Toxicity Prediction")
+    try:
+        url2 = "https://github.com/TahseenNoor/binding-affinity-app/raw/refs/heads/main/pharmokinetics%20final.csv"
+        df2 = pd.read_csv(url2)
+        st.dataframe(df2)
+    except Exception as e:
+        st.error(f"Error loading data: {e}")
+
 
 with col2:
     st.markdown("### Description")

@@ -3,7 +3,6 @@ import pandas as pd
 import joblib
 import base64
 import numpy as np
-import matplotlib.pyplot as plt
 
 # ------------------------ PAGE CONFIG ------------------------
 st.set_page_config(
@@ -132,18 +131,15 @@ with col1:
                 prediction = model.predict(features)[0]
                 mse_values.append(np.square(prediction - actual_value))
 
-            # Plot the MSE variation across different pairs
-            st.markdown("### 📊 MSE Variation Across Protein-Ligand Pairs")
+            # Prepare data for visualization using Streamlit's built-in charting
             mse_df = pd.DataFrame({
                 'Protein-Ligand Pair': protein_ligand_pairs,
                 'MSE': mse_values
             })
 
-            fig, ax = plt.subplots(figsize=(10, 6))
-            ax.barh(mse_df['Protein-Ligand Pair'], mse_df['MSE'], color='darkorange')
-            ax.set_xlabel('MSE (Mean Squared Error)')
-            ax.set_title('MSE Variation Across Different Protein-Ligand Pairs')
-            st.pyplot(fig)
+            # Display the bar chart with MSE values
+            st.markdown("### 📊 MSE Variation Across Protein-Ligand Pairs")
+            st.bar_chart(mse_df.set_index('Protein-Ligand Pair')['MSE'])
 
         except Exception as e:
             st.error(f"Something went wrong: {e}")

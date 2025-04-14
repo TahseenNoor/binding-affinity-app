@@ -136,7 +136,12 @@ if st.button("🔬 Predict Binding Affinity"):
         feature_names = features.columns
         feature_impact = dict(zip(feature_names, importances))
 
-        # Show feature importance in a simple table format
+        st.markdown("<div class='suggestion-card'><h4>🧠 AI Suggestion:</h4>", unsafe_allow_html=True)
+        for feat, score in feature_impact.items():
+            st.markdown(f"<p>- <b>{feat}</b> is important in predicting the binding affinity. Adjust it for better results.</p>", unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
+
+         # Show feature importance in a simple table format
         st.markdown("### 🧠 Feature Importance:")
         feature_df = pd.DataFrame(list(feature_impact.items()), columns=['Feature', 'Importance'])
         st.dataframe(feature_df.sort_values(by='Importance', ascending=False))

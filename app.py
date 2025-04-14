@@ -88,6 +88,13 @@ h1, h2, h3, h4 {{
 df = pd.read_csv("Cleaned_Autodock_Results.csv")
 model = joblib.load("model_with_importance.pkl")
 
+# Load ADMET data
+admet_df = pd.read_csv("pharmokinetics final.csv", encoding='ISO-8859-1')
+admet_df['Compound'] = admet_df['Compound'].astype(str).str.strip().str.upper()
+
+# Add ligand column for matching
+df['Ligand'] = df['PROTEIN-LIGAND'].apply(lambda x: x.split('-')[-1].strip().upper())
+
 # ------------------------ HEADER ------------------------
 st.markdown("# 🧬 Binding Affinity Predictor")
 st.markdown("This AI-powered tool predicts binding affinity between a target protein and a compound. Optimized for drug discovery research and enhanced with biotech visual aesthetics.")
@@ -99,7 +106,7 @@ col1, col2 = st.columns([1, 2])
 with col1:
     st.image("https://cdn-icons-png.flaticon.com/512/3004/3004496.png", width=80)
     selected_pair = st.selectbox("Choose a Protein-Ligand Pair", df['PROTEIN-LIGAND'].unique())
-    
+
     if st.button("🔬 Predict Binding Affinity"):
         try:
             row = df[df['PROTEIN-LIGAND'] == selected_pair]
@@ -117,6 +124,17 @@ with col1:
                 unsafe_allow_html=True
             )
 
+            # Display ADMET data if available
+            ligand_name = selected_pair.split('-')[-1].strip().upper()
+            ligand_admet = admet_df[admet_df['Compound'] == ligand_name]
+
+            if not ligand_admet.empty:
+                st.markdown("### 🧪 ADMET Profile")
+                st.dataframe(ligand_admet.drop(columns=["Compound"]), use_container_width=True)
+            else:
+                st.info("No ADMET data available for this ligand.")
+
+            # Feature importance
             importances = model.feature_importances_
             feature_names = features.columns
             feature_impact = dict(zip(feature_names, importances))
@@ -129,8 +147,6 @@ with col1:
 
         except Exception as e:
             st.error(f"Something went wrong: {e}")
-
-
 
 with col2:
     st.markdown("### Description")

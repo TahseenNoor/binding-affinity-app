@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import joblib
 import base64
+import re
 
 # ------------------------ PAGE CONFIG ------------------------
 st.set_page_config(
@@ -10,7 +11,7 @@ st.set_page_config(
     page_icon="🧬"
 )
 
-# ------------------------ LOAD BACKGROUND IMAGE & CONVERT TO BASE64 ------------------------
+# ------------------------ BACKGROUND IMAGE ------------------------
 def get_base64(file_path):
     with open(file_path, "rb") as f:
         data = f.read()
@@ -18,7 +19,7 @@ def get_base64(file_path):
 
 img_base64 = get_base64("image.png")
 
-# ------------------------ CUSTOM CSS WITH EMBEDDED IMAGE ------------------------
+# ------------------------ EMBED CSS ------------------------
 st.markdown(f"""
 <style>
 html, body, [data-testid="stAppViewContainer"] {{
@@ -84,11 +85,11 @@ h1, h2, h3, h4 {{
 </style>
 """, unsafe_allow_html=True)
 
-# ------------------------ LOAD MODEL AND DATA ------------------------
+# ------------------------ LOAD DATA AND MODEL ------------------------
 df = pd.read_csv("Cleaned_Autodock_Results.csv")
 model = joblib.load("model_with_importance.pkl")
 
-# ------------------------ HEADER ------------------------
+# ------------------------ MAIN HEADER ------------------------
 st.markdown("# 🧬 Binding Affinity Predictor")
 st.markdown("This AI-powered tool predicts binding affinity between a target protein and a compound. Optimized for drug discovery research and enhanced with biotech visual aesthetics.")
 st.markdown("---")
@@ -99,7 +100,7 @@ col1, col2 = st.columns([1, 2])
 with col1:
     st.image("https://cdn-icons-png.flaticon.com/512/3004/3004496.png", width=80)
     selected_pair = st.selectbox("Choose a Protein-Ligand Pair", df['PROTEIN-LIGAND'].unique())
-    
+
     if st.button("🔬 Predict Binding Affinity"):
         try:
             row = df[df['PROTEIN-LIGAND'] == selected_pair]
@@ -117,6 +118,17 @@ with col1:
                 unsafe_allow_html=True
             )
 
+            # ---------- Extract ligand name to match 2D image ----------
+            ligand_name = selected_pair.split('-')[-1].strip().upper()
+
+            # Format it similar to image names
+            image_name = f"{ligand_name} 2D.png.png"
+            image_url = f"https://raw.githubusercontent.com/TahseenNoor/binding-affinity-app/main/2D/{image_name}"
+
+            st.markdown("#### 🧪 2D Structure")
+            st.image(image_url, caption="2D Structure", use_container_width=True)
+
+            # ---------- AI Suggestion ----------
             importances = model.feature_importances_
             feature_names = features.columns
             feature_impact = dict(zip(feature_names, importances))
@@ -130,13 +142,11 @@ with col1:
         except Exception as e:
             st.error(f"Something went wrong: {e}")
 
-
-
 with col2:
     st.markdown("### Description")
     st.write("This tool predicts binding affinity between a target and compound using ML models. "
              "Designed for drug discovery researchers. Styled with biotech vibes.")
-    
+
     st.markdown("---")
     st.markdown("""
     Predicting the binding affinity between genes and compounds is crucial 🧬 for drug discovery and precision medicine,

@@ -113,7 +113,7 @@ with col1:
             row = df[df['PROTEIN-LIGAND'] == selected_pair]
             if row.empty:
                 st.warning("Selected protein-ligand pair not found.")
-                return
+                st.stop()  # Stops execution here
 
             # Extract features and make prediction
             features = row[[

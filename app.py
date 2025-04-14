@@ -85,10 +85,6 @@ h1, h2, h3, h4 {{
     color: #2c2c2c;
 }}
 
-.sidebar {
-    margin-top: 10%;
-}
-
 .content-container {{
     display: flex;
     flex-direction: column;
@@ -115,7 +111,7 @@ st.markdown("# 🧬 Binding Affinity Predictor")
 st.markdown("This AI-powered tool predicts binding affinity between a target protein and a compound. Optimized for drug discovery research and enhanced with biotech visual aesthetics.")
 st.markdown("---")
 
-# ------------------------ LAYOUT ------------------------
+# ------------------------ DESCRIPTION ------------------------
 st.markdown("### Description:")
 st.write("This tool predicts binding affinity between a target and compound using ML models. Designed for drug discovery researchers. Styled with biotech vibes.")
 

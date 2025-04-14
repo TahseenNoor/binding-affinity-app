@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 import joblib
 import base64
-import matplotlib.pyplot as plt
 
 # ------------------------ PAGE CONFIG ------------------------
 st.set_page_config(
@@ -125,16 +124,12 @@ with col1:
             st.markdown("</div>", unsafe_allow_html=True)
 
             # ------------------------ BAR PLOT ------------------------
-            fig, ax = plt.subplots(figsize=(6, 4))
             feature_impact_sorted = sorted(feature_impact.items(), key=lambda x: x[1], reverse=True)
             labels, values = zip(*feature_impact_sorted)
-            
-            ax.barh(labels, values, color="darkblue", edgecolor="black")  # Dark blue bars with black edges
-            ax.set_xlabel('Impact Score')
-            ax.set_title('Feature Importance')
-            ax.grid(True, axis='x', linestyle='-', linewidth=0.5, color='black')  # Black grid lines
 
-            st.pyplot(fig)
+            # Use Streamlit's built-in bar chart
+            feature_impact_df = pd.DataFrame(list(zip(labels, values)), columns=["Feature", "Importance"])
+            st.bar_chart(feature_impact_df.set_index("Feature"))
 
         except Exception as e:
             st.error(f"Something went wrong: {e}")

@@ -144,8 +144,44 @@ with col2:
     
     st.markdown("---")
     st.markdown("""
-    Predicting the binding affinity between genes and compounds is crucial for drug discovery and precision medicine,
-    as it helps identify which compounds may effectively target specific genes. A high affinity indicates strong binding
-    and potential therapeutic value, while a low affinity suggests weak or non-specific interactions. The tool aids in prioritizing compounds
-    for further testing based on predicted affinity values.
+    Welcome to Binding Affinity Predictor, the next-generation tool designed to accelerate drug discovery and enhance precision medicine. 🌍 In today’s fast-paced biotech world, understanding the interaction between proteins and compounds is critical to finding effective therapies. This AI-powered platform uses state-of-the-art machine learning models to predict the binding affinity between target proteins and various ligands, offering significant value to researchers, clinicians, and pharmaceutical companies working toward new drug development. 🧬💊
+
+What is Binding Affinity and Why Does It Matter?
+Binding affinity refers to the strength of the interaction between a protein and a ligand (molecule). The higher the affinity, the stronger the bond between them. In drug discovery, the goal is to identify compounds that bind strongly to disease-related proteins, as these compounds are more likely to be effective in treating diseases. 💥 A low dissociation constant (Kd) or binding free energy (ΔG) indicates a high binding affinity, which is often the hallmark of effective therapeutic molecules. On the other hand, compounds with weak binding affinity (high Kd) may need further refinement to improve their therapeutic potential. 🔬
+
+Understanding binding affinity is essential for drug screening, as it determines which compounds are worthy of further study in laboratory tests and clinical trials. By leveraging computational tools to predict these interactions early in the process, researchers can avoid costly experimental failures and streamline the discovery of novel treatments. 🚀
+
+How Does It Work?
+The Binding Affinity Predictor tool uses a machine learning model trained on protein-ligand interaction data. It takes into account various factors such as electrostatic energy, torsional energy, van der Waals forces, and intermolecular energy, among others, to calculate a predicted binding affinity value for each compound. This prediction helps prioritize molecules based on their likelihood of successful interactions with the target protein. ⚙️
+
+The tool helps bridge the gap between traditional wet lab methods and modern computational biology. By integrating AI into the prediction process, researchers can significantly reduce the cost and time involved in the early stages of drug development. 📉💡
+
+Key Benefits of the Binding Affinity Predictor:
+Reduces Costs and Time: Traditional drug discovery methods involve costly laboratory experiments. With AI-powered predictions, these costs are reduced, allowing researchers to focus on the most promising compounds. 💸
+
+Speeds Up Research: By providing quick insights into protein-ligand interactions, the tool accelerates the process of identifying effective compounds for further testing. ⏩
+
+Supports Precision Medicine: Predicting binding affinities helps tailor treatments to specific patients, improving the chances of success in personalized therapy. 🧬
+
+Data-Driven Decisions: The platform empowers researchers with data-backed predictions, enhancing the precision of decisions made during the drug discovery process. 🎯
+
+Visualizing Binding Affinity:
+In the world of drug discovery, visualization plays an important role. The Binding Affinity Predictor not only provides accurate predictions but also visualizes key features of protein-ligand interactions using intuitive graphs and heatmaps. These visuals help researchers quickly identify which features influence the binding affinity most, allowing for strategic molecule optimization. 📊🔥
+
+Graphical Features Include:
+Binding Affinity Prediction Graphs: Easily visualize the predicted affinity values to compare multiple ligands at once.
+
+Heatmaps of Feature Impact: See how individual features (such as electrostatic energy, torsional energy, etc.) contribute to the binding affinity.
+
+Interactive Data: Engage with graphs and charts to explore different compound-protein interactions, adjusting parameters to see real-time updates.
+
+The Future of Drug Development
+At the core of our mission is innovation. The Binding Affinity Predictor tool is built to empower biotech researchers and pharmaceutical companies to not only optimize existing drugs but also discover entirely new treatments. By helping scientists predict which compounds have the highest chances of success, our tool accelerates drug development timelines and enhances the likelihood of bringing effective therapies to market faster. ⏩💡
+
+In the fight against global diseases such as cancer, diabetes, and infectious diseases, the Binding Affinity Predictor contributes to the next wave of healthcare innovation, playing a crucial role in the advancement of human health. 🏥🌍
+
+Join Us in Revolutionizing Medicine
+The Binding Affinity Predictor is just the beginning. As the tool evolves, we are committed to integrating even more sophisticated features, such as incorporating real-time molecular simulations and genomic data, to provide even more precise predictions. Our goal is to be at the forefront of computational drug discovery and to enable personalized medicine in ways that were never possible before. 🔬💉
+
+Let’s collaborate and revolutionize healthcare together! 🌟
     """)

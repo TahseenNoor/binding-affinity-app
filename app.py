@@ -109,7 +109,13 @@ with col1:
 
     if st.button("🔬 Predict Binding Affinity"):
         try:
+            # Check if the selected pair exists in the dataframe
             row = df[df['PROTEIN-LIGAND'] == selected_pair]
+            if row.empty:
+                st.warning("Selected protein-ligand pair not found.")
+                return
+
+            # Extract features and make prediction
             features = row[[
                 'Electrostatic energy',
                 'Torsional energy',
@@ -124,33 +130,39 @@ with col1:
                 unsafe_allow_html=True
             )
 
-            # Display ADMET data if available
+            # Extract ligand name for ADMET search
             ligand_name = selected_pair.split('-')[-1].strip().upper()
             ligand_admet = admet_df[admet_df['Compound'] == ligand_name]
 
+            # Display ADMET data if available
             if not ligand_admet.empty:
                 st.markdown("### 🧪 ADMET Profile")
                 st.dataframe(ligand_admet.drop(columns=["Compound"]), use_container_width=True)
             else:
                 st.info("No ADMET data available for this ligand.")
 
+            # Display matching ADMET candidates based on ligand name
+            matches = admet_df[admet_df['Compound'].str.contains(ligand_name[:5], na=False)]
+            st.write(f"Looking for ADMET data with compound name: `{ligand_name}`")
+            st.write("Top 5 matching candidates from ADMET dataset:")
+            st.dataframe(matches.head())
+
             # Feature importance
             importances = model.feature_importances_
             feature_names = features.columns
             feature_impact = dict(zip(feature_names, importances))
 
+            # Display AI suggestions for improving binding affinity
             st.markdown("<div class='suggestion-card'><h4>🧠 AI Suggestion:</h4>", unsafe_allow_html=True)
             sorted_feats = sorted(feature_impact.items(), key=lambda x: x[1], reverse=True)
             for feat, score in sorted_feats:
                 st.markdown(f"<p>- <b>{feat}</b> is highly influential. Try minimizing it to improve binding.</p>", unsafe_allow_html=True)
             st.markdown("</div>", unsafe_allow_html=True)
-            st.markdown("#### 🔍 Debug Info")
-            st.write(f"Looking for ADMET data with compound name: `{ligand_name}`")
-            st.write("Top 5 matching candidates from ADMET dataset:")
-            matches = admet_df[admet_df['Compound'].str.contains(ligand_name[:5], na=False)]
-            st.dataframe(matches.head())
 
-
+        except KeyError as e:
+            st.error(f"Missing column in data: {e}")
+        except ValueError as e:
+            st.error(f"Data format issue: {e}")
         except Exception as e:
             st.error(f"Something went wrong: {e}")
 

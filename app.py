@@ -144,6 +144,12 @@ with col1:
             for feat, score in sorted_feats:
                 st.markdown(f"<p>- <b>{feat}</b> is highly influential. Try minimizing it to improve binding.</p>", unsafe_allow_html=True)
             st.markdown("</div>", unsafe_allow_html=True)
+            st.markdown("#### 🔍 Debug Info")
+            st.write(f"Looking for ADMET data with compound name: `{ligand_name}`")
+            st.write("Top 5 matching candidates from ADMET dataset:")
+            matches = admet_df[admet_df['Compound'].str.contains(ligand_name[:5], na=False)]
+            st.dataframe(matches.head())
+
 
         except Exception as e:
             st.error(f"Something went wrong: {e}")

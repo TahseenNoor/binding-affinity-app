@@ -103,7 +103,8 @@ with col1:
     # ---------- Optional: Show corresponding 2D image ----------
     image_filename = selected_pair.replace(" ", "%20") + "%202D.png"
     image_url = f"https://raw.githubusercontent.com/your-username/your-repo/main/2D/{image_filename}"
-    st.image(image_url, caption="2D Structure", use_column_width=True)
+    st.image(image_url, caption="2D Structure", use_container_width=True)
+
 
     if st.button("🔬 Predict Binding Affinity"):
         try:

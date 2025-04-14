@@ -23,7 +23,7 @@ st.markdown(f"""
 <style>
 html, body, [data-testid="stAppViewContainer"] {{
     font-family: 'Palatino Linotype', serif;
-    background-image: url("data:image/png;base64,{img_base64}");
+    background-image: url("data:image/png;base64,{img_base64}"); 
     background-size: cover;
     background-repeat: no-repeat;
     background-attachment: fixed;
@@ -124,6 +124,10 @@ with col1:
             st.markdown("### 🧠 Feature Importance:")
             feature_df = pd.DataFrame(list(feature_impact.items()), columns=['Feature', 'Importance'])
             st.dataframe(feature_df.sort_values(by='Importance', ascending=False))
+
+            # Bar chart for feature importance
+            st.markdown("### 📊 Feature Importance Visualization:")
+            st.bar_chart(feature_df.set_index('Feature')['Importance'])
 
             st.markdown("<div class='suggestion-card'><h4>🧠 AI Suggestion:</h4>", unsafe_allow_html=True)
             for feat, score in feature_impact.items():

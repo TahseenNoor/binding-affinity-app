@@ -118,9 +118,17 @@ with col1:
             feature_impact = dict(zip(feature_names, importances))
 
             st.markdown("<div class='suggestion-card'><h4>🧠 AI Suggestion:</h4>", unsafe_allow_html=True)
+            
+            # Get the most influential feature
             sorted_feats = sorted(feature_impact.items(), key=lambda x: x[1], reverse=True)
-            for feat, score in sorted_feats:
-                st.markdown(f"<p>- <b>{feat}</b> is highly influential. Try minimizing it to improve binding.</p>", unsafe_allow_html=True)
+            most_influential_feature, importance = sorted_feats[0]
+
+            # Provide a more simplified suggestion
+            if importance > 0.2:  # Adjust this threshold based on your feature importance range
+                st.markdown(f"<p>- <b>{most_influential_feature}</b> has the highest impact on binding affinity. Try optimizing it to improve the result.</p>", unsafe_allow_html=True)
+            else:
+                st.markdown(f"<p>- All features are almost equally influential. Consider optimizing the compound as a whole for better results.</p>", unsafe_allow_html=True)
+            
             st.markdown("</div>", unsafe_allow_html=True)
 
             # ------------------------ BAR PLOT ------------------------

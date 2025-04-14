@@ -108,7 +108,7 @@ model = joblib.load("model_with_importance.pkl")
 
 # ------------------------ HEADER ------------------------
 st.markdown("# 🧬 Binding Affinity Predictor")
-st.markdown("This AI-powered tool predicts binding affinity between a target protein and a compound. Optimized for drug discovery research and enhanced with biotech visual aesthetics.")
+st.markdown("Welcome to Binding Affinity Predictor, the next-generation tool designed to accelerate drug discovery and enhance precision medicine. 🌍 In today’s fast-paced biotech world, understanding the interaction between proteins and compounds is critical to finding effective therapies. This AI-powered platform uses state-of-the-art machine learning models to predict the binding affinity between target proteins and various ligands, offering significant value to researchers, clinicians, and pharmaceutical companies working toward new drug development. 🧬💊.")
 st.markdown("---")
 
 # ------------------------ DESCRIPTION ------------------------
@@ -150,10 +150,6 @@ if st.button("🔬 Predict Binding Affinity"):
         st.markdown("### 📊 Feature Importance Visualization:")
         st.bar_chart(feature_df.set_index('Feature')['Importance'])
 
-        st.markdown("<div class='suggestion-card'><h4>🧠 AI Suggestion:</h4>", unsafe_allow_html=True)
-        for feat, score in feature_impact.items():
-            st.markdown(f"<p>- <b>{feat}</b> is important in predicting the binding affinity. Adjust it for better results.</p>", unsafe_allow_html=True)
-        st.markdown("</div>", unsafe_allow_html=True)
 
     except Exception as e:
         st.error(f"Something went wrong: {e}")

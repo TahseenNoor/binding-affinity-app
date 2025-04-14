@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 import joblib
 import base64
-import numpy as np
 
 # ------------------------ PAGE CONFIG ------------------------
 st.set_page_config(
@@ -51,7 +50,6 @@ h1, h2, h3, h4 {{
     padding: 0.6em 1.5em;
     border: none;
 }}
-
 .stButton>button:hover {{
     background-color: #836fff;
     transform: scale(1.02);
@@ -92,8 +90,7 @@ model = joblib.load("model_with_importance.pkl")
 
 # ------------------------ HEADER ------------------------
 st.markdown("# 🧬 Binding Affinity Predictor")
-st.markdown("This AI-powered tool predicts binding affinity between a target protein and a compound. Optimized for drug discovery research and enhanced with biotech visual aesthetics.")
-st.markdown("---")
+st.markdown("This AI-powered tool predicts binding affinity between a target protein and a compound. Optimized for drug discovery research.")
 
 # ------------------------ LAYOUT ------------------------
 col1, col2 = st.columns([1, 2])
@@ -105,59 +102,46 @@ with col1:
     if st.button("🔬 Predict Binding Affinity"):
         try:
             row = df[df['PROTEIN-LIGAND'] == selected_pair]
-            features = row[[ 'Electrostatic energy', 'Torsional energy', 'vdw hb desolve energy', 'Intermol energy' ]].fillna(0)
+            features = row[[ 
+                'Electrostatic energy',
+                'Torsional energy',
+                'vdw hb desolve energy',
+                'Intermol energy'
+            ]].fillna(0)
 
             prediction = model.predict(features)[0]
-            actual_value = row['Binding Affinity'].values[0]  # Assuming the actual value is in this column
-
-            mse = np.square(prediction - actual_value)  # Compute MSE for the selected compound
-
             st.markdown("### ✅ Prediction Result")
             st.markdown(
                 f"<div class='prediction-highlight'>🧬 Predicted Binding Affinity: <b>{prediction:.2f} kcal/mol</b></div>",
                 unsafe_allow_html=True
             )
 
-            st.markdown(f"### 🔍 MSE (Mean Squared Error): <b>{mse:.4f}</b>", unsafe_allow_html=True)
+            importances = model.feature_importances_
+            feature_names = features.columns
+            feature_impact = dict(zip(feature_names, importances))
 
-            # ------------------------ MSE Variation Plot ------------------------
-            # For MSE variation across multiple compounds, we calculate the MSE for all rows in the dataset
-            mse_values = []
-            protein_ligand_pairs = df['PROTEIN-LIGAND'].unique()
-            for pair in protein_ligand_pairs:
-                row = df[df['PROTEIN-LIGAND'] == pair]
-                features = row[[ 'Electrostatic energy', 'Torsional energy', 'vdw hb desolve energy', 'Intermol energy' ]].fillna(0)
-                actual_value = row['Binding Affinity'].values[0]
-                prediction = model.predict(features)[0]
-                mse_values.append(np.square(prediction - actual_value))
+            # Show feature importance in a simple table format
+            st.markdown("### 🧠 Feature Importance:")
+            feature_df = pd.DataFrame(list(feature_impact.items()), columns=['Feature', 'Importance'])
+            st.dataframe(feature_df.sort_values(by='Importance', ascending=False))
 
-            # Prepare data for visualization using Streamlit's built-in charting
-            mse_df = pd.DataFrame({
-                'Protein-Ligand Pair': protein_ligand_pairs,
-                'MSE': mse_values
-            })
-
-            # Display the bar chart with MSE values
-            st.markdown("### 📊 MSE Variation Across Protein-Ligand Pairs")
-            st.bar_chart(mse_df.set_index('Protein-Ligand Pair')['MSE'])
+            st.markdown("<div class='suggestion-card'><h4>🧠 AI Suggestion:</h4>", unsafe_allow_html=True)
+            for feat, score in feature_impact.items():
+                st.markdown(f"<p>- <b>{feat}</b> is important in predicting the binding affinity. Adjust it for better results.</p>", unsafe_allow_html=True)
+            st.markdown("</div>", unsafe_allow_html=True)
 
         except Exception as e:
             st.error(f"Something went wrong: {e}")
 
-
 with col2:
     st.markdown("### Description")
-    st.write("This tool predicts binding affinity between a target and compound using ML models. Designed for drug discovery researchers. Styled with biotech vibes.")
+    st.write("This tool predicts binding affinity between a target and compound using ML models. "
+             "Designed for drug discovery researchers. Styled with biotech vibes.")
     
     st.markdown("---")
     st.markdown("""
-    Predicting the binding affinity between genes and compounds is crucial 🧬 for drug discovery and precision medicine,
-    as it helps identify which compounds may effectively target specific genes 🧪. Typically, a threshold binding affinity
-    value—often expressed as a dissociation constant (Kd) or binding free energy (ΔG)—is used to evaluate the strength of
-    interaction 💥. A high affinity (e.g., Kd < 1μM) indicates strong binding and potential therapeutic value 💊,
-    while a low affinity (e.g., Kd > 10μM) may suggest weak or non-specific interactions 🚫. If the predicted affinity is above the threshold
-    (weaker binding), the compound may need optimization through structural modification or may be discarded from further testing 🔧.
-    Conversely, if the affinity is below the threshold (stronger binding), the compound can be prioritized for in vitro or in vivo validation 🧪.
-    This predictive step accelerates the drug development process ⏩ and reduces the cost of experimental screening 📉, making it a key tool
-    in computational biology and cheminformatics 🖥️.
+    Predicting the binding affinity between genes and compounds is crucial for drug discovery and precision medicine,
+    as it helps identify which compounds may effectively target specific genes. A high affinity indicates strong binding
+    and potential therapeutic value, while a low affinity suggests weak or non-specific interactions. The tool aids in prioritizing compounds
+    for further testing based on predicted affinity values.
     """)

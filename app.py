@@ -5,7 +5,7 @@ import base64
 
 # ------------------------ PAGE CONFIG ------------------------
 st.set_page_config(
-    page_title="Binding Affinity Predictor",
+    page_title="AFFERAZE",
     layout="wide",
     page_icon="🧬"
 )

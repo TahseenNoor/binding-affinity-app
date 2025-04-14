@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 import joblib
 import base64
-import matplotlib.pyplot as plt
 
 # ------------------------ PAGE CONFIG ------------------------
 st.set_page_config(
@@ -82,6 +81,27 @@ h1, h2, h3, h4 {{
     font-weight: bold;
     color: #2c2c2c;
 }}
+
+.bar-chart {{
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    width: 100%;
+    height: 200px;
+    padding: 1rem;
+}}
+
+.bar {{
+    height: 30px;
+    margin: 5px 0;
+    border-radius: 10px;
+    color: white;
+    display: flex;
+    align-items: center;
+    padding-left: 10px;
+    font-weight: bold;
+}}
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -122,15 +142,13 @@ with col1:
             feature_names = features.columns
             feature_impact = dict(zip(feature_names, importances))
 
-            # Display the graph of feature importance
+            # Display the CSS bar chart of feature importance
             st.markdown("### 🔍 Feature Importance")
-            fig, ax = plt.subplots(figsize=(8, 5))
+            st.markdown("<div class='bar-chart'>", unsafe_allow_html=True)
             sorted_feats = sorted(feature_impact.items(), key=lambda x: x[1], reverse=True)
-            feat_names, feat_scores = zip(*sorted_feats)
-            ax.barh(feat_names, feat_scores, color='#6a5acd')
-            ax.set_xlabel('Importance Score')
-            ax.set_title('Feature Importance for Binding Affinity Prediction')
-            st.pyplot(fig)
+            for feat, score in sorted_feats:
+                st.markdown(f"<div class='bar' style='width:{score * 100}%'>{feat}: {score:.2f}</div>", unsafe_allow_html=True)
+            st.markdown("</div>", unsafe_allow_html=True)
 
             # AI Suggestions (optional)
             st.markdown("<div class='suggestion-card'><h4>🧠 AI Suggestion:</h4>", unsafe_allow_html=True)

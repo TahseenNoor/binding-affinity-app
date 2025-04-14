@@ -2,6 +2,8 @@ import streamlit as st
 import pandas as pd
 import joblib
 import base64
+import numpy as np
+import matplotlib.pyplot as plt
 
 # ------------------------ PAGE CONFIG ------------------------
 st.set_page_config(
@@ -107,37 +109,41 @@ with col1:
             features = row[[ 'Electrostatic energy', 'Torsional energy', 'vdw hb desolve energy', 'Intermol energy' ]].fillna(0)
 
             prediction = model.predict(features)[0]
+            actual_value = row['Binding Affinity'].values[0]  # Assuming the actual value is in this column
+
+            mse = np.square(prediction - actual_value)  # Compute MSE for the selected compound
+
             st.markdown("### ✅ Prediction Result")
             st.markdown(
                 f"<div class='prediction-highlight'>🧬 Predicted Binding Affinity: <b>{prediction:.2f} kcal/mol</b></div>",
                 unsafe_allow_html=True
             )
 
-            importances = model.feature_importances_
-            feature_names = features.columns
-            feature_impact = dict(zip(feature_names, importances))
+            st.markdown(f"### 🔍 MSE (Mean Squared Error): <b>{mse:.4f}</b>", unsafe_allow_html=True)
 
-            st.markdown("<div class='suggestion-card'><h4>🧠 AI Suggestion:</h4>", unsafe_allow_html=True)
-            
-            # Get the most influential feature
-            sorted_feats = sorted(feature_impact.items(), key=lambda x: x[1], reverse=True)
-            most_influential_feature, importance = sorted_feats[0]
+            # ------------------------ MSE Variation Plot ------------------------
+            # For MSE variation across multiple compounds, we calculate the MSE for all rows in the dataset
+            mse_values = []
+            protein_ligand_pairs = df['PROTEIN-LIGAND'].unique()
+            for pair in protein_ligand_pairs:
+                row = df[df['PROTEIN-LIGAND'] == pair]
+                features = row[[ 'Electrostatic energy', 'Torsional energy', 'vdw hb desolve energy', 'Intermol energy' ]].fillna(0)
+                actual_value = row['Binding Affinity'].values[0]
+                prediction = model.predict(features)[0]
+                mse_values.append(np.square(prediction - actual_value))
 
-            # Provide a more simplified suggestion
-            if importance > 0.2:  # Adjust this threshold based on your feature importance range
-                st.markdown(f"<p>- <b>{most_influential_feature}</b> has the highest impact on binding affinity. Try optimizing it to improve the result.</p>", unsafe_allow_html=True)
-            else:
-                st.markdown(f"<p>- All features are almost equally influential. Consider optimizing the compound as a whole for better results.</p>", unsafe_allow_html=True)
-            
-            st.markdown("</div>", unsafe_allow_html=True)
+            # Plot the MSE variation across different pairs
+            st.markdown("### 📊 MSE Variation Across Protein-Ligand Pairs")
+            mse_df = pd.DataFrame({
+                'Protein-Ligand Pair': protein_ligand_pairs,
+                'MSE': mse_values
+            })
 
-            # ------------------------ BAR PLOT ------------------------
-            feature_impact_sorted = sorted(feature_impact.items(), key=lambda x: x[1], reverse=True)
-            labels, values = zip(*feature_impact_sorted)
-
-            # Use Streamlit's built-in bar chart
-            feature_impact_df = pd.DataFrame(list(zip(labels, values)), columns=["Feature", "Importance"])
-            st.bar_chart(feature_impact_df.set_index("Feature"))
+            fig, ax = plt.subplots(figsize=(10, 6))
+            ax.barh(mse_df['Protein-Ligand Pair'], mse_df['MSE'], color='darkorange')
+            ax.set_xlabel('MSE (Mean Squared Error)')
+            ax.set_title('MSE Variation Across Different Protein-Ligand Pairs')
+            st.pyplot(fig)
 
         except Exception as e:
             st.error(f"Something went wrong: {e}")

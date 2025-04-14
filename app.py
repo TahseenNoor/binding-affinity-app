@@ -85,6 +85,20 @@ h1, h2, h3, h4 {{
     color: #2c2c2c;
 }}
 
+.content-container {{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 3rem;
+    width: 100%;
+}}
+
+.result-container {{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+}}
 </style>
 """, unsafe_allow_html=True)
 
@@ -94,63 +108,47 @@ model = joblib.load("model_with_importance.pkl")
 
 # ------------------------ HEADER ------------------------
 st.markdown("# 🧬 Binding Affinity Predictor")
-st.markdown("This AI-powered tool predicts binding affinity between a target protein and a compound. Optimized for drug discovery research.")
+st.markdown("This AI-powered tool predicts binding affinity between a target protein and a compound. Optimized for drug discovery research and enhanced with biotech visual aesthetics.")
+st.markdown("---")
 
-# ------------------------ LAYOUT ------------------------
-col1, col2 = st.columns([1, 2])
+# ------------------------ DESCRIPTION ------------------------
+st.markdown("### Description:")
+st.write("This tool predicts binding affinity between a target and compound using ML models. Designed for drug discovery researchers. Styled with biotech vibes.")
 
-with col1:
-    st.image("https://cdn-icons-png.flaticon.com/512/3004/3004496.png", width=80)
-    selected_pair = st.selectbox("Choose a Protein-Ligand Pair", df['PROTEIN-LIGAND'].unique())
-    
-    if st.button("🔬 Predict Binding Affinity"):
-        try:
-            row = df[df['PROTEIN-LIGAND'] == selected_pair]
-            features = row[[ 
-                'Electrostatic energy',
-                'Torsional energy',
-                'vdw hb desolve energy',
-                'Intermol energy'
-            ]].fillna(0)
+# ------------------------ INPUT SECTION ------------------------
+st.markdown("---")
+selected_pair = st.selectbox("Choose a Protein-Ligand Pair", df['PROTEIN-LIGAND'].unique())
 
-            prediction = model.predict(features)[0]
-            st.markdown("### ✅ Prediction Result")
-            st.markdown(
-                f"<div class='prediction-highlight'>🧬 Predicted Binding Affinity: <b>{prediction:.2f} kcal/mol</b></div>",
-                unsafe_allow_html=True
-            )
+# ------------------------ PREDICTION ------------------------
+if st.button("🔬 Predict Binding Affinity"):
+    try:
+        row = df[df['PROTEIN-LIGAND'] == selected_pair]
+        features = row[[ 'Electrostatic energy', 'Torsional energy', 'vdw hb desolve energy', 'Intermol energy' ]].fillna(0)
 
-            importances = model.feature_importances_
-            feature_names = features.columns
-            feature_impact = dict(zip(feature_names, importances))
+        prediction = model.predict(features)[0]
+        st.markdown("### ✅ Prediction Result")
+        st.markdown(
+            f"<div class='prediction-highlight'>🧬 Predicted Binding Affinity: <b>{prediction:.2f} kcal/mol</b></div>",
+            unsafe_allow_html=True
+        )
 
-            # Show feature importance in a simple table format
-            st.markdown("### 🧠 Feature Importance:")
-            feature_df = pd.DataFrame(list(feature_impact.items()), columns=['Feature', 'Importance'])
-            st.dataframe(feature_df.sort_values(by='Importance', ascending=False))
+        importances = model.feature_importances_
+        feature_names = features.columns
+        feature_impact = dict(zip(feature_names, importances))
 
-            # Bar chart for feature importance
-            st.markdown("### 📊 Feature Importance Visualization:")
-            st.bar_chart(feature_df.set_index('Feature')['Importance'])
+        # Show feature importance in a simple table format
+        st.markdown("### 🧠 Feature Importance:")
+        feature_df = pd.DataFrame(list(feature_impact.items()), columns=['Feature', 'Importance'])
+        st.dataframe(feature_df.sort_values(by='Importance', ascending=False))
 
-            st.markdown("<div class='suggestion-card'><h4>🧠 AI Suggestion:</h4>", unsafe_allow_html=True)
-            for feat, score in feature_impact.items():
-                st.markdown(f"<p>- <b>{feat}</b> is important in predicting the binding affinity. Adjust it for better results.</p>", unsafe_allow_html=True)
-            st.markdown("</div>", unsafe_allow_html=True)
+        # Bar chart for feature importance
+        st.markdown("### 📊 Feature Importance Visualization:")
+        st.bar_chart(feature_df.set_index('Feature')['Importance'])
 
-        except Exception as e:
-            st.error(f"Something went wrong: {e}")
+        st.markdown("<div class='suggestion-card'><h4>🧠 AI Suggestion:</h4>", unsafe_allow_html=True)
+        for feat, score in feature_impact.items():
+            st.markdown(f"<p>- <b>{feat}</b> is important in predicting the binding affinity. Adjust it for better results.</p>", unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
 
-with col2:
-    st.markdown("### Description")
-    st.write("This tool predicts binding affinity between a target and compound using ML models. "
-             "Designed for drug discovery researchers. Styled with biotech vibes.")
-    
-    st.markdown("---")
-    st.markdown("""
-    Predicting the binding affinity between genes and compounds is crucial for drug discovery and precision medicine,
-    as it helps identify which compounds may effectively target specific genes. A high affinity indicates strong binding
-    and potential therapeutic value, while a low affinity suggests weak or non-specific interactions. The tool aids in prioritizing compounds
-    for further testing based on predicted affinity values.
-    """)
-
+    except Exception as e:
+        st.error(f"Something went wrong: {e}")

@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import joblib
 import base64
+import matplotlib.pyplot as plt
 
 # ------------------------ PAGE CONFIG ------------------------
 st.set_page_config(
@@ -23,7 +24,7 @@ st.markdown(f"""
 <style>
 html, body, [data-testid="stAppViewContainer"] {{
     font-family: 'Palatino Linotype', serif;
-    background-image: url("data:image/png;base64,{img_base64}"); 
+    background-image: url("data:image/png;base64,{img_base64}");
     background-size: cover;
     background-repeat: no-repeat;
     background-attachment: fixed;
@@ -50,6 +51,7 @@ h1, h2, h3, h4 {{
     padding: 0.6em 1.5em;
     border: none;
 }}
+
 .stButton>button:hover {{
     background-color: #836fff;
     transform: scale(1.02);
@@ -81,33 +83,6 @@ h1, h2, h3, h4 {{
     font-weight: bold;
     color: #2c2c2c;
 }}
-
-.bar-chart {{
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    width: 100%;
-    height: 200px;
-    padding: 1rem;
-}}
-
-.bar {{
-    height: 30px;
-    margin: 5px 0;
-    border-radius: 10px;
-    color: white;
-    display: flex;
-    align-items: center;
-    padding-left: 10px;
-    font-weight: bold;
-    text-shadow: 1px 1px 3px rgba(0,0,0,0.2);  /* Adding shadow for readability */
-}}
-
-.bar-1 {{ background-color: #ff6f61; }}   /* Vibrant red */
-.bar-2 {{ background-color: #ffcc00; }}   /* Bright yellow */
-.bar-3 {{ background-color: #00bfae; }}   /* Bright teal */
-.bar-4 {{ background-color: #ff80ed; }}   /* Vibrant pink */
-
 </style>
 """, unsafe_allow_html=True)
 
@@ -130,12 +105,7 @@ with col1:
     if st.button("🔬 Predict Binding Affinity"):
         try:
             row = df[df['PROTEIN-LIGAND'] == selected_pair]
-            features = row[[ 
-                'Electrostatic energy',
-                'Torsional energy',
-                'vdw hb desolve energy',
-                'Intermol energy'
-            ]].fillna(0)
+            features = row[[ 'Electrostatic energy', 'Torsional energy', 'vdw hb desolve energy', 'Intermol energy' ]].fillna(0)
 
             prediction = model.predict(features)[0]
             st.markdown("### ✅ Prediction Result")
@@ -148,28 +118,31 @@ with col1:
             feature_names = features.columns
             feature_impact = dict(zip(feature_names, importances))
 
-            # Display the CSS bar chart of feature importance
-            st.markdown("### 🔍 Feature Importance")
-            st.markdown("<div class='bar-chart'>", unsafe_allow_html=True)
-            sorted_feats = sorted(feature_impact.items(), key=lambda x: x[1], reverse=True)
-            for i, (feat, score) in enumerate(sorted_feats):
-                # Assign a unique class for each bar for varied color
-                st.markdown(f"<div class='bar bar-{i+1}' style='width:{score * 100}%'>{feat}: {score:.2f}</div>", unsafe_allow_html=True)
-            st.markdown("</div>", unsafe_allow_html=True)
-
-            # AI Suggestions (optional)
             st.markdown("<div class='suggestion-card'><h4>🧠 AI Suggestion:</h4>", unsafe_allow_html=True)
+            sorted_feats = sorted(feature_impact.items(), key=lambda x: x[1], reverse=True)
             for feat, score in sorted_feats:
                 st.markdown(f"<p>- <b>{feat}</b> is highly influential. Try minimizing it to improve binding.</p>", unsafe_allow_html=True)
             st.markdown("</div>", unsafe_allow_html=True)
 
+            # ------------------------ BAR PLOT ------------------------
+            fig, ax = plt.subplots(figsize=(6, 4))
+            feature_impact_sorted = sorted(feature_impact.items(), key=lambda x: x[1], reverse=True)
+            labels, values = zip(*feature_impact_sorted)
+            
+            ax.barh(labels, values, color="darkblue", edgecolor="black")  # Dark blue bars with black edges
+            ax.set_xlabel('Impact Score')
+            ax.set_title('Feature Importance')
+            ax.grid(True, axis='x', linestyle='-', linewidth=0.5, color='black')  # Black grid lines
+
+            st.pyplot(fig)
+
         except Exception as e:
             st.error(f"Something went wrong: {e}")
 
+
 with col2:
     st.markdown("### Description")
-    st.write("This tool predicts binding affinity between a target and compound using ML models. "
-             "Designed for drug discovery researchers. Styled with biotech vibes.")
+    st.write("This tool predicts binding affinity between a target and compound using ML models. Designed for drug discovery researchers. Styled with biotech vibes.")
     
     st.markdown("---")
     st.markdown("""

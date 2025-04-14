@@ -107,7 +107,7 @@ df = pd.read_csv("Cleaned_Autodock_Results.csv")
 model = joblib.load("model_with_importance.pkl")
 
 # ------------------------ HEADER ------------------------
-st.markdown("# 🧬 Binding Affinity Predictor")
+st.markdown("# 🧬 AFFERAZE")
 st.markdown("Welcome to Binding Affinity Predictor, the next-generation tool designed to accelerate drug discovery and enhance precision medicine. 🌍 In today’s fast-paced biotech world, understanding the interaction between proteins and compounds is critical to finding effective therapies. This AI-powered platform uses state-of-the-art machine learning models to predict the binding affinity between target proteins and various ligands, offering significant value to researchers, clinicians, and pharmaceutical companies working toward new drug development. 🧬💊.")
 st.markdown("---")
 

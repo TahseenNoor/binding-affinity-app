@@ -101,16 +101,21 @@ with col1:
     st.image("https://cdn-icons-png.flaticon.com/512/3004/3004496.png", width=80)
     selected_pair = st.selectbox("Choose a Protein-Ligand Pair", df['PROTEIN-LIGAND'].unique())
 
-    # ---------- 2D Image Display ----------
-    image_filename = selected_pair.replace(" ", "%20") + "%202D.png"
+    # Adjust the image filename to match actual file name format
+    image_filename = selected_pair.replace(" ", "%20") + "%202D.png.png"
     image_url = f"https://raw.githubusercontent.com/TahseenNoor/binding-affinity-app/main/2D/{image_filename}"
 
+    # Show the constructed URL (for debugging)
     st.markdown(f"Trying to load: {image_url}")
+
+    # Display the image if it exists
+    import requests
     response = requests.get(image_url)
     if response.status_code == 200:
         st.image(image_url, caption="2D Structure", use_container_width=True)
     else:
         st.warning("2D image not found for this compound.")
+
 
     # ---------- Prediction Button ----------
     if st.button("🔬 Predict Binding Affinity"):

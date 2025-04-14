@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import joblib
 import base64
+import requests
 
 # ------------------------ PAGE CONFIG ------------------------
 st.set_page_config(
@@ -100,12 +101,18 @@ with col1:
     st.image("https://cdn-icons-png.flaticon.com/512/3004/3004496.png", width=80)
     selected_pair = st.selectbox("Choose a Protein-Ligand Pair", df['PROTEIN-LIGAND'].unique())
 
-    # ---------- Optional: Show corresponding 2D image ----------
+    # ---------- 2D Image Display ----------
     image_filename = selected_pair.replace(" ", "%20") + "%202D.png"
-    image_url = f"https://raw.githubusercontent.com/your-username/your-repo/main/2D/{image_filename}"
-    st.image(image_url, caption="2D Structure", use_container_width=True)
+    image_url = f"https://raw.githubusercontent.com/TahseenNoor/binding-affinity-app/main/2D/{image_filename}"
 
+    st.markdown(f"Trying to load: {image_url}")
+    response = requests.get(image_url)
+    if response.status_code == 200:
+        st.image(image_url, caption="2D Structure", use_container_width=True)
+    else:
+        st.warning("2D image not found for this compound.")
 
+    # ---------- Prediction Button ----------
     if st.button("🔬 Predict Binding Affinity"):
         try:
             row = df[df['PROTEIN-LIGAND'] == selected_pair]
@@ -140,16 +147,16 @@ with col2:
     st.markdown("### Description")
     st.write("This tool predicts binding affinity between a target and compound using ML models. "
              "Designed for drug discovery researchers. Styled with biotech vibes.")
-    
+
     st.markdown("---")
     st.markdown("""
     Predicting the binding affinity between genes and compounds is crucial 🧬 for drug discovery and precision medicine,
     as it helps identify which compounds may effectively target specific genes 🧪. Typically, a threshold binding affinity
-    value—often expressed as a dissociation constant (Kd) or binding free energy (ΔG)—is used to evaluate the strength of
+    value—often expressed as a dissociation constant (Kd) or binding free energy (∆G)—is used to evaluate the strength of
     interaction 💥. A high affinity (e.g., Kd < 1μM) indicates strong binding and potential therapeutic value 💊,
-    while a low affinity (e.g., Kd > 10μM) may suggest weak or non-specific interactions 🚫. If the predicted affinity is above the threshold
+    while a low affinity (e.g., Kd > 10μM) may suggest weak or non-specific interactions ❌. If the predicted affinity is above the threshold
     (weaker binding), the compound may need optimization through structural modification or may be discarded from further testing 🔧.
     Conversely, if the affinity is below the threshold (stronger binding), the compound can be prioritized for in vitro or in vivo validation 🧪.
     This predictive step accelerates the drug development process ⏩ and reduces the cost of experimental screening 📉, making it a key tool
-    in computational biology and cheminformatics 🖥️.
+    in computational biology and cheminformatics 🗑️.
     """)

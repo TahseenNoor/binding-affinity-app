@@ -2,9 +2,6 @@ import streamlit as st
 import pandas as pd
 import joblib
 import base64
-import matplotlib.pyplot as plt
-import seaborn as sns
-import io
 
 # ------------------------ PAGE CONFIG ------------------------
 st.set_page_config(page_title="Binding Affinity Predictor", layout="wide", page_icon="🧬")
@@ -29,6 +26,7 @@ html, body, [data-testid="stAppViewContainer"] {{
     background-position: center;
     color: black !important;
 }}
+
 [data-testid="stAppViewContainer"] {{
     background-color: rgba(255, 255, 255, 0.85);
     padding: 2rem;
@@ -108,10 +106,15 @@ with col1:
                 st.markdown("### ✅ Prediction Result")
                 st.markdown(f"<div class='prediction-highlight'>🧬 Predicted Binding Affinity: <b>{prediction:.2f} kcal/mol</b></div>", unsafe_allow_html=True)
                 
-                # Plot Prediction vs Actual
-                plot_prediction_vs_actual(df, model)
-
                 # Provide Download Link
+                def create_csv(prediction, selected_pair):
+                    result = {
+                        "Protein-Ligand Pair": [selected_pair],
+                        "Predicted Binding Affinity (kcal/mol)": [prediction]
+                    }
+                    df_result = pd.DataFrame(result)
+                    return df_result.to_csv(index=False)
+
                 csv = create_csv(prediction, selected_pair)
                 st.download_button(
                     label="Download Prediction Result",
@@ -119,6 +122,7 @@ with col1:
                     file_name="binding_affinity_prediction.csv",
                     mime="text/csv"
                 )
+
             except Exception as e:
                 st.error(f"Something went wrong: {e}")
 

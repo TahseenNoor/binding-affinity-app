@@ -23,7 +23,7 @@ st.markdown(f"""
 <style>
 html, body, [data-testid="stAppViewContainer"] {{
     font-family: 'Palatino Linotype', serif;
-    background-image: url("data:image/png;base64,{img_base64}");
+    background-image: url("data:image/png;base64,{img_base64}"); 
     background-size: cover;
     background-repeat: no-repeat;
     background-attachment: fixed;
@@ -100,7 +100,13 @@ h1, h2, h3, h4 {{
     align-items: center;
     padding-left: 10px;
     font-weight: bold;
+    text-shadow: 1px 1px 3px rgba(0,0,0,0.2);  /* Adding shadow for readability */
 }}
+
+.bar-1 {{ background-color: #ff6f61; }}   /* Vibrant red */
+.bar-2 {{ background-color: #ffcc00; }}   /* Bright yellow */
+.bar-3 {{ background-color: #00bfae; }}   /* Bright teal */
+.bar-4 {{ background-color: #ff80ed; }}   /* Vibrant pink */
 
 </style>
 """, unsafe_allow_html=True)
@@ -146,8 +152,9 @@ with col1:
             st.markdown("### 🔍 Feature Importance")
             st.markdown("<div class='bar-chart'>", unsafe_allow_html=True)
             sorted_feats = sorted(feature_impact.items(), key=lambda x: x[1], reverse=True)
-            for feat, score in sorted_feats:
-                st.markdown(f"<div class='bar' style='width:{score * 100}%'>{feat}: {score:.2f}</div>", unsafe_allow_html=True)
+            for i, (feat, score) in enumerate(sorted_feats):
+                # Assign a unique class for each bar for varied color
+                st.markdown(f"<div class='bar bar-{i+1}' style='width:{score * 100}%'>{feat}: {score:.2f}</div>", unsafe_allow_html=True)
             st.markdown("</div>", unsafe_allow_html=True)
 
             # AI Suggestions (optional)

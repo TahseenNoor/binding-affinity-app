@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 import joblib
 import base64
-import re
 
 # ------------------------ PAGE CONFIG ------------------------
 st.set_page_config(
@@ -11,7 +10,7 @@ st.set_page_config(
     page_icon="🧬"
 )
 
-# ------------------------ BACKGROUND IMAGE ------------------------
+# ------------------------ LOAD BACKGROUND IMAGE & CONVERT TO BASE64 ------------------------
 def get_base64(file_path):
     with open(file_path, "rb") as f:
         data = f.read()
@@ -19,7 +18,7 @@ def get_base64(file_path):
 
 img_base64 = get_base64("image.png")
 
-# ------------------------ EMBED CSS ------------------------
+# ------------------------ CUSTOM CSS WITH EMBEDDED IMAGE ------------------------
 st.markdown(f"""
 <style>
 html, body, [data-testid="stAppViewContainer"] {{
@@ -85,11 +84,11 @@ h1, h2, h3, h4 {{
 </style>
 """, unsafe_allow_html=True)
 
-# ------------------------ LOAD DATA AND MODEL ------------------------
+# ------------------------ LOAD MODEL AND DATA ------------------------
 df = pd.read_csv("Cleaned_Autodock_Results.csv")
 model = joblib.load("model_with_importance.pkl")
 
-# ------------------------ MAIN HEADER ------------------------
+# ------------------------ HEADER ------------------------
 st.markdown("# 🧬 Binding Affinity Predictor")
 st.markdown("This AI-powered tool predicts binding affinity between a target protein and a compound. Optimized for drug discovery research and enhanced with biotech visual aesthetics.")
 st.markdown("---")
@@ -112,23 +111,22 @@ with col1:
             ]].fillna(0)
 
             prediction = model.predict(features)[0]
+
             st.markdown("### ✅ Prediction Result")
             st.markdown(
                 f"<div class='prediction-highlight'>🧬 Predicted Binding Affinity: <b>{prediction:.2f} kcal/mol</b></div>",
                 unsafe_allow_html=True
             )
 
-            # ---------- Extract ligand name to match 2D image ----------
-            ligand_name = selected_pair.split('-')[-1].strip().upper()
+            # ----------- SHOW 2D STRUCTURE IMAGE -----------
+            st.markdown("### 🧪 2D Structure")
 
-            # Format it similar to image names
-            image_name = f"{ligand_name} 2D.png.png"
-            image_url = f"https://raw.githubusercontent.com/TahseenNoor/binding-affinity-app/main/2D/{image_name}"
+            ligand_name = selected_pair.split("-")[-1].strip()
+            image_filename = f"{ligand_name} 2D.png.png"
+            image_url = f"https://raw.githubusercontent.com/TahseenNoor/binding-affinity-app/main/2D/{image_filename}"
+            st.image(image_url, caption=f"2D Structure of {ligand_name}", use_column_width=True)
 
-            st.markdown("#### 🧪 2D Structure")
-            st.image(image_url, caption="2D Structure", use_container_width=True)
-
-            # ---------- AI Suggestion ----------
+            # ----------- FEATURE IMPORTANCE -----------
             importances = model.feature_importances_
             feature_names = features.columns
             feature_impact = dict(zip(feature_names, importances))

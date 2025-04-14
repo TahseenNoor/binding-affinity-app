@@ -99,7 +99,12 @@ col1, col2 = st.columns([1, 2])
 with col1:
     st.image("https://cdn-icons-png.flaticon.com/512/3004/3004496.png", width=80)
     selected_pair = st.selectbox("Choose a Protein-Ligand Pair", df['PROTEIN-LIGAND'].unique())
-    
+
+    # ---------- Optional: Show corresponding 2D image ----------
+    image_filename = selected_pair.replace(" ", "%20") + "%202D.png"
+    image_url = f"https://raw.githubusercontent.com/your-username/your-repo/main/2D/{image_filename}"
+    st.image(image_url, caption="2D Structure", use_column_width=True)
+
     if st.button("🔬 Predict Binding Affinity"):
         try:
             row = df[df['PROTEIN-LIGAND'] == selected_pair]
@@ -130,8 +135,6 @@ with col1:
         except Exception as e:
             st.error(f"Something went wrong: {e}")
 
-
-
 with col2:
     st.markdown("### Description")
     st.write("This tool predicts binding affinity between a target and compound using ML models. "
@@ -149,4 +152,3 @@ with col2:
     This predictive step accelerates the drug development process ⏩ and reduces the cost of experimental screening 📉, making it a key tool
     in computational biology and cheminformatics 🖥️.
     """)
-

@@ -99,7 +99,7 @@ col1, col2 = st.columns([1, 2])
 with col1:
     st.image("https://cdn-icons-png.flaticon.com/512/3004/3004496.png", width=80)
     selected_pair = st.selectbox("Choose a Protein-Ligand Pair", df['PROTEIN-LIGAND'].unique())
-
+    
     if st.button("🔬 Predict Binding Affinity"):
         try:
             row = df[df['PROTEIN-LIGAND'] == selected_pair]
@@ -111,22 +111,12 @@ with col1:
             ]].fillna(0)
 
             prediction = model.predict(features)[0]
-
             st.markdown("### ✅ Prediction Result")
             st.markdown(
                 f"<div class='prediction-highlight'>🧬 Predicted Binding Affinity: <b>{prediction:.2f} kcal/mol</b></div>",
                 unsafe_allow_html=True
             )
 
-            # ----------- SHOW 2D STRUCTURE IMAGE -----------
-            st.markdown("### 🧪 2D Structure")
-
-            ligand_name = selected_pair.split("-")[-1].strip()
-            image_filename = f"{ligand_name} 2D.png.png"
-            image_url = f"https://raw.githubusercontent.com/TahseenNoor/binding-affinity-app/main/2D/{image_filename}"
-            st.image(image_url, caption=f"2D Structure of {ligand_name}", use_column_width=True)
-
-            # ----------- FEATURE IMPORTANCE -----------
             importances = model.feature_importances_
             feature_names = features.columns
             feature_impact = dict(zip(feature_names, importances))
@@ -140,11 +130,13 @@ with col1:
         except Exception as e:
             st.error(f"Something went wrong: {e}")
 
+
+
 with col2:
     st.markdown("### Description")
     st.write("This tool predicts binding affinity between a target and compound using ML models. "
              "Designed for drug discovery researchers. Styled with biotech vibes.")
-
+    
     st.markdown("---")
     st.markdown("""
     Predicting the binding affinity between genes and compounds is crucial 🧬 for drug discovery and precision medicine,

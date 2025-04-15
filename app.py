@@ -88,13 +88,13 @@ if mode == "🔎 Select from Dataset":
             features = row[['Electrostatic energy', 'Torsional energy', 'vdw hb desolve energy', 'Intermol energy']].fillna(0)
             prediction = model.predict(features)[0]
 
-            st.markdown(f"### 🧬 Real Compound: `{selected_real_name}`")
+            st.markdown(f"### 🧬 Compound Selected: `{selected_label}`")
             st.markdown(
                 f"<div class='prediction-highlight'>📉 Predicted Binding Affinity: <b>{prediction:.2f} kcal/mol</b></div>",
                 unsafe_allow_html=True
             )
 
-            # Feature Importance Table
+            # Feature Importance Table + Chart
             importances = model.feature_importances_
             feature_df = pd.DataFrame({
                 'Feature': features.columns,
@@ -102,7 +102,11 @@ if mode == "🔎 Select from Dataset":
             }).sort_values(by="Importance", ascending=False)
 
             st.markdown("<div class='suggestion-card'><h4>🧠 Feature Importance:</h4></div>", unsafe_allow_html=True)
-            st.dataframe(feature_df)
+            col1, col2 = st.columns(2)
+            with col1:
+                st.dataframe(feature_df)
+            with col2:
+                st.bar_chart(feature_df.set_index('Feature'))
 
         except Exception as e:
             st.error(f"Something went wrong: {e}")
@@ -136,7 +140,11 @@ else:
         }).sort_values(by="Importance", ascending=False)
 
         st.markdown("### 📌 Feature Importance (Model Weights):")
-        st.dataframe(feature_df)
+        col1, col2 = st.columns(2)
+        with col1:
+            st.dataframe(feature_df)
+        with col2:
+            st.bar_chart(feature_df.set_index('Feature'))
 
 # ------------------------ FOOTER ------------------------
 st.markdown("---")

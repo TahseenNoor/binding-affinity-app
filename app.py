@@ -31,7 +31,6 @@ html, body, [data-testid="stAppViewContainer"] {{
     background-color: rgba(255, 255, 255, 0.88);
     padding: 2rem;
     border-radius: 15px;
-    align-items: center;
     max-height: 100vh;
     overflow-y: auto;
 }}
@@ -57,11 +56,6 @@ h1, h2, h3, h4 {{
     border-radius: 10px;
     margin-top: 20px;
     color: black;
-}}
-
-.scroll-container {{
-    max-height: 300px;
-    overflow-y: auto;
 }}
 </style>
 """, unsafe_allow_html=True)
@@ -102,14 +96,13 @@ if mode == "🔎 Select from Dataset":
 
             # Feature Importance Table
             importances = model.feature_importances_
-            feature_names = features.columns
             feature_df = pd.DataFrame({
-                'Feature': feature_names,
+                'Feature': features.columns,
                 'Importance': importances
             }).sort_values(by="Importance", ascending=False)
 
             st.markdown("<div class='suggestion-card'><h4>🧠 Feature Importance:</h4></div>", unsafe_allow_html=True)
-            st.dataframe(feature_df.style.background_gradient(cmap="Purples", subset=["Importance"]))
+            st.dataframe(feature_df)
 
         except Exception as e:
             st.error(f"Something went wrong: {e}")
@@ -143,7 +136,7 @@ else:
         }).sort_values(by="Importance", ascending=False)
 
         st.markdown("### 📌 Feature Importance (Model Weights):")
-        st.dataframe(feature_df.style.background_gradient(cmap="Purples", subset=["Importance"]))
+        st.dataframe(feature_df)
 
 # ------------------------ FOOTER ------------------------
 st.markdown("---")

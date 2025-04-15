@@ -59,9 +59,16 @@ h1, h2, h3, h4 {{
 </style>
 """, unsafe_allow_html=True)
 
-# ------------------------ LOAD MODEL AND DATA ------------------------
-df = pd.read_csv("Cleaned_Autodock_Results.csv")
+# ------------------------ LOAD MODEL ------------------------
 model = joblib.load("model_with_importance.pkl")
+
+# ------------------------ PREDEFINED PROTEIN-LIGAND PAIRS ------------------------
+# This is just a small hardcoded set of protein-ligand pairs with their features
+protein_ligand_data = {
+    'Protein1-LigandA': {'Electrostatic energy': 1.5, 'Torsional energy': -0.3, 'vdw hb desolve energy': 0.1, 'Intermol energy': -1.2},
+    'Protein2-LigandB': {'Electrostatic energy': 2.0, 'Torsional energy': -0.8, 'vdw hb desolve energy': 0.2, 'Intermol energy': -1.5},
+    'Protein3-LigandC': {'Electrostatic energy': 0.8, 'Torsional energy': -0.2, 'vdw hb desolve energy': 0.4, 'Intermol energy': -1.1},
+}
 
 # ------------------------ HEADER ------------------------
 st.markdown("# 🧬 AFFERAZE")
@@ -69,26 +76,32 @@ st.markdown("Predict binding affinity between proteins and ligands using ML 💊
 st.markdown("---")
 
 # ------------------------ MODE SELECTOR ------------------------
-mode = st.radio("Choose Prediction Mode:", ["🔎 Select from Dataset", "🧪 Enter Custom Energy Values"])
+mode = st.radio("Choose Prediction Mode:", ["🔎 Select from Predefined Pairs", "🧪 Enter Custom Energy Values"])
 
 # ------------------------ SELECT FROM EXISTING DATA ------------------------
-if mode == "🔎 Select from Dataset":
-    selected_pair = st.selectbox("Choose a Protein-Ligand Pair", df['PROTEIN-LIGAND'].unique())
+if mode == "🔎 Select from Predefined Pairs":
+    selected_pair = st.selectbox("Choose a Protein-Ligand Pair", list(protein_ligand_data.keys()))
 
-    if st.button("🔬 Predict Binding Affinity (from Dataset)"):
+    if st.button("🔬 Predict Binding Affinity (from Predefined Pairs)"):
         try:
-            row = df[df['PROTEIN-LIGAND'] == selected_pair]
-            features = row[['Electrostatic energy', 'Torsional energy', 'vdw hb desolve energy', 'Intermol energy']].fillna(0)
-            prediction = model.predict(features)[0]
+            # Get the feature values for the selected protein-ligand pair
+            features = protein_ligand_data[selected_pair]
+            
+            # Convert features to DataFrame for model prediction
+            features_df = pd.DataFrame([features])
 
-            st.markdown(f"### 🧬 Compound Selected: `{selected_pair}`")
+            # Make the prediction
+            prediction = model.predict(features_df)[0]
+
+            st.markdown(f"### 🧬 Protein-Ligand Pair: `{selected_pair}`")
             st.markdown(
                 f"<div class='prediction-highlight'>📉 Predicted Binding Affinity: <b>{prediction:.2f} kcal/mol</b></div>",
                 unsafe_allow_html=True
             )
 
+            # Show feature importance
             importances = model.feature_importances_
-            feature_names = features.columns
+            feature_names = features_df.columns
             feature_impact = dict(zip(feature_names, importances))
 
             st.markdown("<div class='suggestion-card'><h4>🧠 Feature Importance:</h4>", unsafe_allow_html=True)
@@ -124,6 +137,7 @@ else:
             unsafe_allow_html=True
         )
 
+        # Show feature importance
         importances = model.feature_importances_
         feature_impact = dict(zip(features.columns, importances))
         st.markdown("### 📌 Feature Importance (Model Weights):")

@@ -108,30 +108,25 @@ model = joblib.load("model_with_importance.pkl")
 
 # ------------------------ HEADER ------------------------
 st.markdown("# 🧬 AFFERAZE")
-st.markdown("Welcome to Binding Affinity Predictor, the next-generation tool designed to accelerate drug discovery and enhance precision medicine. 🌍 In today’s fast-paced biotech world, understanding the interaction between proteins and compounds is critical to finding effective therapies. This AI-powered platform uses state-of-the-art machine learning models to predict the binding affinity between target proteins and various ligands, offering significant value to researchers, clinicians, and pharmaceutical companies working toward new drug development. 🧬💊.")
+st.markdown("Welcome to **Binding Affinity Predictor**, a next-gen ML-powered tool to evaluate protein-ligand interactions. Accelerate your drug discovery journey with ease. 💊")
 st.markdown("---")
 
-# ------------------------ DESCRIPTION ------------------------
-st.markdown("### Description:")
-st.write("This tool predicts binding affinity between a target and compound using ML models. Designed for drug discovery researchers. Styled with biotech vibes.")
+# ------------------------ MODE SELECTOR ------------------------
+mode = st.radio("Choose Prediction Mode:", ["🔎 Select from Dataset", "🧪 Enter Custom Energy Values"])
 
-# ------------------------ SELECT INPUT MODE ------------------------
-st.markdown("### Choose Input Method:")
-input_mode = st.radio("Select input method:", ["🔽 Select from Dataset", "🧪 Enter Custom Compound"])
-
-# ------------------------ PREDEFINED INPUT ------------------------
-if input_mode == "🔽 Select from Dataset":
+# ------------------------ SELECT FROM EXISTING DATA ------------------------
+if mode == "🔎 Select from Dataset":
     selected_pair = st.selectbox("Choose a Protein-Ligand Pair", df['PROTEIN-LIGAND'].unique())
-    
-    if st.button("🔬 Predict Binding Affinity"):
+
+    if st.button("🔬 Predict Binding Affinity (from Dataset)"):
         try:
             row = df[df['PROTEIN-LIGAND'] == selected_pair]
             features = row[['Electrostatic energy', 'Torsional energy', 'vdw hb desolve energy', 'Intermol energy']].fillna(0)
-
             prediction = model.predict(features)[0]
-            st.markdown("### ✅ Prediction Result")
+
+            st.markdown(f"### 🧬 Compound: `{selected_pair}`")
             st.markdown(
-                f"<div class='prediction-highlight'>🧬 Predicted Binding Affinity: <b>{prediction:.2f} kcal/mol</b></div>",
+                f"<div class='prediction-highlight'>📉 Predicted Binding Affinity: <b>{prediction:.2f} kcal/mol</b></div>",
                 unsafe_allow_html=True
             )
 
@@ -139,65 +134,40 @@ if input_mode == "🔽 Select from Dataset":
             feature_names = features.columns
             feature_impact = dict(zip(feature_names, importances))
 
-            st.markdown("<div class='suggestion-card'><h4>🧠 AI Suggestion:</h4>", unsafe_allow_html=True)
+            st.markdown("<div class='suggestion-card'><h4>🧠 Feature Importance Insights:</h4>", unsafe_allow_html=True)
             for feat, score in feature_impact.items():
-                st.markdown(f"<p>- <b>{feat}</b> is important in predicting the binding affinity. Adjust it for better results.</p>", unsafe_allow_html=True)
+                st.markdown(f"<p>• <b>{feat}</b> has an influence score of <code>{score:.3f}</code></p>", unsafe_allow_html=True)
             st.markdown("</div>", unsafe_allow_html=True)
 
-            st.markdown("### 🧠 Feature Importance:")
             feature_df = pd.DataFrame(list(feature_impact.items()), columns=['Feature', 'Importance'])
-            st.dataframe(feature_df.sort_values(by='Importance', ascending=False))
-
-            st.markdown("### 📊 Feature Importance Visualization:")
             st.bar_chart(feature_df.set_index('Feature')['Importance'])
 
         except Exception as e:
             st.error(f"Something went wrong: {e}")
 
-# ------------------------ CUSTOM INPUT ------------------------
-elif input_mode == "🧪 Enter Custom Compound":
-    st.markdown("### 🧪 Enter Docking Energies for a Custom Compound")
+# ------------------------ CUSTOM INPUT SECTION ------------------------
+else:
+    st.markdown("### ✍️ Enter Custom Energy Values Below:")
+    electro = st.number_input("Electrostatic energy", value=0.0)
+    torsional = st.number_input("Torsional energy", value=0.0)
+    vdw = st.number_input("VDW + HB + Desolvation energy", value=0.0)
+    intermol = st.number_input("Intermolecular energy", value=0.0)
 
-    col1, col2 = st.columns(2)
-    with col1:
-        electro = st.number_input("Electrostatic Energy", value=0.0)
-        torsional = st.number_input("Torsional Energy", value=0.0)
-    with col2:
-        vdw = st.number_input("vdw/hbond/desolvation Energy", value=0.0)
-        intermol = st.number_input("Intermol Energy", value=0.0)
+    if st.button("🔮 Predict Binding Affinity (Custom Input)"):
+        features = pd.DataFrame([[electro, torsional, vdw, intermol]],
+                                columns=['Electrostatic energy', 'Torsional energy', 'vdw hb desolve energy', 'Intermol energy'])
+        prediction = model.predict(features)[0]
+        st.markdown(
+            f"<div class='prediction-highlight'>📊 Predicted Binding Affinity: <b>{prediction:.2f} kcal/mol</b> (based on your inputs)</div>",
+            unsafe_allow_html=True
+        )
 
-    if st.button("🚀 Predict Custom Binding Affinity"):
-        try:
-            custom_features = pd.DataFrame([{
-                'Electrostatic energy': electro,
-                'Torsional energy': torsional,
-                'vdw hb desolve energy': vdw,
-                'Intermol energy': intermol
-            }])
+        importances = model.feature_importances_
+        feature_impact = dict(zip(features.columns, importances))
+        st.markdown("### 📌 Feature Importance (Model Weights):")
+        feature_df = pd.DataFrame(list(feature_impact.items()), columns=['Feature', 'Importance'])
+        st.bar_chart(feature_df.set_index('Feature')['Importance'])
 
-            prediction = model.predict(custom_features)[0]
-
-            st.markdown("### ✅ Prediction Result")
-            st.markdown(
-                f"<div class='prediction-highlight'>🧬 Predicted Binding Affinity: <b>{prediction:.2f} kcal/mol</b></div>",
-                unsafe_allow_html=True
-            )
-
-            importances = model.feature_importances_
-            feature_names = custom_features.columns
-            feature_impact = dict(zip(feature_names, importances))
-
-            st.markdown("<div class='suggestion-card'><h4>🧠 Optimization Suggestion:</h4>", unsafe_allow_html=True)
-            for feat, score in feature_impact.items():
-                st.markdown(f"<p>- <b>{feat}</b> is influential. You might optimize this for better binding.</p>", unsafe_allow_html=True)
-            st.markdown("</div>", unsafe_allow_html=True)
-
-            st.markdown("### 🧠 Feature Importance:")
-            feature_df = pd.DataFrame(list(feature_impact.items()), columns=['Feature', 'Importance'])
-            st.dataframe(feature_df.sort_values(by='Importance', ascending=False))
-
-            st.markdown("### 📊 Feature Importance Visualization:")
-            st.bar_chart(feature_df.set_index('Feature')['Importance'])
-
-        except Exception as e:
-            st.error(f"Something went wrong: {e}")
+# ------------------------ FOOTER ------------------------
+st.markdown("---")
+st.caption("💡 Tip: Add multiple compounds to the dataset, or input your own values to explore different binding outcomes.")

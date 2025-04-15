@@ -57,7 +57,6 @@ h1, h2, h3, h4 {{
     color: black;
     overflow-x: auto;
 }}
-
 </style>
 """, unsafe_allow_html=True)
 
@@ -65,13 +64,14 @@ h1, h2, h3, h4 {{
 df = pd.read_csv("Cleaned_Autodock_Results.csv")
 model = joblib.load("model_with_importance.pkl")
 
-# Generate Custom Display Names
-custom_names = []
-for i, entry in enumerate(df["PROTEIN-LIGAND"]):
-    protein_fake = f"Protein {chr(65 + i % 26)}"
-    ligand_fake = f"Ligand {chr(88 + i % 3)}"
-    custom_names.append(f"🧬 {protein_fake} + {ligand_fake}")
-df["Custom Name"] = custom_names
+# ------------------------ Generate Anonymous Mapping ------------------------
+anon_map = {}
+reverse_map = {}
+for i, real_name in enumerate(df['PROTEIN-LIGAND']):
+    anon_name = f"🧬 Protein {chr(65 + i)} + Ligand {chr(88 + (i % 3))}"
+    anon_map[anon_name] = real_name
+    reverse_map[real_name] = anon_name
+df['Anon Name'] = df['PROTEIN-LIGAND'].map(reverse_map)
 
 # ------------------------ HEADER ------------------------
 st.markdown("# 🧬 AFFERAZE")
@@ -83,15 +83,16 @@ mode = st.radio("Choose Prediction Mode:", ["🔎 Select from Dataset", "🧪 En
 
 # ------------------------ SELECT FROM EXISTING DATA ------------------------
 if mode == "🔎 Select from Dataset":
-    selected_custom_name = st.selectbox("Choose a Protein-Ligand Pair", df['Custom Name'])
-    
+    selected_anon = st.selectbox("Choose a Protein-Ligand Pair", df['Anon Name'].unique())
+
     if st.button("🔬 Predict Binding Affinity (from Dataset)"):
         try:
-            row = df[df['Custom Name'] == selected_custom_name]
+            real_name = anon_map[selected_anon]
+            row = df[df['PROTEIN-LIGAND'] == real_name]
             features = row[['Electrostatic energy', 'Torsional energy', 'vdw hb desolve energy', 'Intermol energy']].fillna(0)
             prediction = model.predict(features)[0]
 
-            st.markdown(f"### {selected_custom_name}")
+            st.markdown(f"### 🧬 Real Pair: `{real_name}`")
             st.markdown(
                 f"<div class='prediction-highlight'>📉 Predicted Binding Affinity: <b>{prediction:.2f} kcal/mol</b></div>",
                 unsafe_allow_html=True
@@ -101,7 +102,6 @@ if mode == "🔎 Select from Dataset":
             importances = model.feature_importances_
             feature_names = features.columns
             feature_impact = dict(zip(feature_names, importances))
-
             feature_df = pd.DataFrame(list(feature_impact.items()), columns=['Feature', 'Importance'])
 
             st.markdown("### 📊 Feature Importance Table")

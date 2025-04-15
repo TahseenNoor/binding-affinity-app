@@ -114,6 +114,7 @@ if mode == "🔎 Select from Dataset":
             st.session_state.features = features
 
             # Scroll to prediction section
+            st.markdown("<script>window.scrollTo(0, document.body.scrollHeight);</script>", unsafe_allow_html=True)
             st.experimental_rerun()
 
         except Exception as e:
@@ -140,6 +141,7 @@ else:
         st.session_state.features = features
 
         # Scroll to prediction section
+        st.markdown("<script>window.scrollTo(0, document.body.scrollHeight);</script>", unsafe_allow_html=True)
         st.experimental_rerun()
 
 # ------------------------ SHOW RESULTS ------------------------

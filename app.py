@@ -22,9 +22,11 @@ st.markdown(f"""
 <style>
 html, body, [data-testid="stAppViewContainer"] {{
     font-family: 'Palatino Linotype', serif;
-    background-image: url("data:image/png;base64,{img_base64}");
+    background-image: url("data:image/png;base64,{img_base64}"); 
     background-size: cover;
     background-attachment: fixed;
+    height: 100vh;
+    overflow-y: scroll;
 }}
 
 [data-testid="stAppViewContainer"] {{
@@ -56,6 +58,19 @@ h1, h2, h3, h4 {{
     margin-top: 20px;
     color: black;
     overflow-x: auto;
+}}
+
+.stButton>button {{
+    background-color: #6a5acd;
+    color: white;
+    padding: 0.5rem 1.5rem;
+    border-radius: 5px;
+    border: none;
+    cursor: pointer;
+}}
+
+.stButton>button:hover {{
+    background-color: #5a4bc7;
 }}
 </style>
 """, unsafe_allow_html=True)
@@ -110,6 +125,12 @@ if mode == "🔎 Select from Dataset":
             st.markdown("### 📈 Feature Importance Chart")
             st.bar_chart(feature_df.set_index("Feature"))
 
+            # AI Suggestion Card (added)
+            st.markdown("<div class='suggestion-card'><h4>🧠 AI Suggestion:</h4>", unsafe_allow_html=True)
+            for feat, score in feature_impact.items():
+                st.markdown(f"<p>- <b>{feat}</b> is important in predicting the binding affinity. Adjust it for better results.</p>", unsafe_allow_html=True)
+            st.markdown("</div>", unsafe_allow_html=True)
+
         except Exception as e:
             st.error(f"Something went wrong: {e}")
 
@@ -144,6 +165,12 @@ else:
 
         st.markdown("### 📈 Feature Importance Chart")
         st.bar_chart(feature_df.set_index("Feature"))
+
+        # AI Suggestion Card (added)
+        st.markdown("<div class='suggestion-card'><h4>🧠 AI Suggestion:</h4>", unsafe_allow_html=True)
+        for feat, score in feature_impact.items():
+            st.markdown(f"<p>- <b>{feat}</b> is important in predicting the binding affinity. Adjust it for better results.</p>", unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
 
 # ------------------------ FOOTER ------------------------
 st.markdown("---")

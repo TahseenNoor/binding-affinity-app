@@ -73,15 +73,20 @@ mode = st.radio("Choose Prediction Mode:", ["🔎 Select from Dataset", "🧪 En
 
 # ------------------------ SELECT FROM EXISTING DATA ------------------------
 if mode == "🔎 Select from Dataset":
-    selected_pair = st.selectbox("Choose a Protein-Ligand Pair", df['PROTEIN-LIGAND'].unique())
+    # Format display names cleanly
+    df['Display Name'] = df['PROTEIN-LIGAND'].apply(lambda x: x.replace("_", " ").replace("-", " - ").title())
+    name_map = dict(zip(df['Display Name'], df['PROTEIN-LIGAND']))
+
+    selected_display_name = st.selectbox("Choose a Protein-Ligand Pair", list(name_map.keys()))
+    actual_name = name_map[selected_display_name]
 
     if st.button("🔬 Predict Binding Affinity (from Dataset)"):
         try:
-            row = df[df['PROTEIN-LIGAND'] == selected_pair]
+            row = df[df['PROTEIN-LIGAND'] == actual_name]
             features = row[['Electrostatic energy', 'Torsional energy', 'vdw hb desolve energy', 'Intermol energy']].fillna(0)
             prediction = model.predict(features)[0]
 
-            st.markdown(f"### 🧬 Compound Selected: `{selected_pair}`")
+            st.markdown(f"### 🧬 Compound Selected: `{selected_display_name}`")
             st.markdown(
                 f"<div class='prediction-highlight'>📉 Predicted Binding Affinity: <b>{prediction:.2f} kcal/mol</b></div>",
                 unsafe_allow_html=True

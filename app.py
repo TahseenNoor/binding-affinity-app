@@ -22,19 +22,16 @@ st.markdown(f"""
 <style>
 html, body, [data-testid="stAppViewContainer"] {{
     font-family: 'Palatino Linotype', serif;
-    background-image: url("data:image/png;base64,{img_base64}"); 
+    background-image: url("data:image/png;base64,{img_base64}");
     background-size: cover;
     background-attachment: fixed;
 }}
 
 [data-testid="stAppViewContainer"] {{
-    background-color: rgba(255, 255, 255, 0.88);
+    background-color: rgba(255, 255, 255, 0.85);
     padding: 2rem;
     border-radius: 15px;
     align-items: center;
-    max-width: 100%;
-    overflow-y: auto;
-    height: 100vh;
 }}
 
 h1, h2, h3, h4 {{
@@ -59,30 +56,12 @@ h1, h2, h3, h4 {{
     margin-top: 20px;
     color: black;
 }}
-
-.stDataFrame {{
-    max-width: 100%;
-    overflow-x: auto;
-}}
-
-.stBarChart {{
-    max-width: 100%;
-}}
 </style>
 """, unsafe_allow_html=True)
 
 # ------------------------ LOAD MODEL AND DATA ------------------------
 df = pd.read_csv("Cleaned_Autodock_Results.csv")
 model = joblib.load("model_with_importance.pkl")
-
-# ------------------------ Generate Anonymous Mapping ------------------------
-anon_map = {}
-reverse_map = {}
-for i, real_name in enumerate(df['PROTEIN-LIGAND']):
-    anon_name = f"🧬 Protein {chr(65 + i)} + Ligand {chr(88 + (i % 3))}"
-    anon_map[anon_name] = real_name
-    reverse_map[real_name] = anon_name
-df['Anon Name'] = df['PROTEIN-LIGAND'].map(reverse_map)
 
 # ------------------------ HEADER ------------------------
 st.markdown("# 🧬 AFFERAZE")
@@ -92,30 +71,38 @@ st.markdown("---")
 # ------------------------ MODE SELECTOR ------------------------
 mode = st.radio("Choose Prediction Mode:", ["🔎 Select from Dataset", "🧪 Enter Custom Energy Values"])
 
-# Check if there's a session state for the previous prediction results
-if 'predicted' not in st.session_state:
-    st.session_state.predicted = False
-
 # ------------------------ SELECT FROM EXISTING DATA ------------------------
 if mode == "🔎 Select from Dataset":
-    selected_anon = st.selectbox("Choose a Protein-Ligand Pair", df['Anon Name'].unique())
+    selected_pair = st.selectbox("Choose a Protein-Ligand Pair", df['PROTEIN-LIGAND'].unique())
 
     if st.button("🔬 Predict Binding Affinity (from Dataset)"):
         try:
-            real_name = anon_map[selected_anon]
-            row = df[df['PROTEIN-LIGAND'] == real_name]
+            row = df[df['PROTEIN-LIGAND'] == selected_pair]
             features = row[['Electrostatic energy', 'Torsional energy', 'vdw hb desolve energy', 'Intermol energy']].fillna(0)
             prediction = model.predict(features)[0]
 
-            st.session_state.predicted = True
-            st.session_state.real_name = real_name
-            st.session_state.prediction = prediction
-            st.session_state.feature_impact = model.feature_importances_
-            st.session_state.features = features
+            st.markdown(f"### 🧬 Compound Selected: `{selected_pair}`")
+            st.markdown(
+                f"<div class='prediction-highlight'>📉 Predicted Binding Affinity: <b>{prediction:.2f} kcal/mol</b></div>",
+                unsafe_allow_html=True
+            )
 
-            # Scroll to prediction section
-            st.markdown("<script>window.scrollTo(0, document.body.scrollHeight);</script>", unsafe_allow_html=True)
-            st.experimental_rerun()
+            importances = model.feature_importances_
+            feature_names = features.columns
+            feature_impact = dict(zip(feature_names, importances))
+
+            st.markdown("<div class='suggestion-card'><h4>🧠 AI Suggestion:</h4>", unsafe_allow_html=True)
+            for feat, score in feature_impact.items():
+                st.markdown(f"<p>- <b>{feat}</b> is important in predicting the binding affinity. Adjust it for better results.</p>", unsafe_allow_html=True)
+            st.markdown("</div>", unsafe_allow_html=True)
+
+            st.markdown("<div class='suggestion-card'><h4>🧠 Feature Importance:</h4>", unsafe_allow_html=True)
+            for feat, score in feature_impact.items():
+                st.markdown(f"• <b>{feat}</b>: {score:.3f}", unsafe_allow_html=True)
+            st.markdown("</div>", unsafe_allow_html=True)
+
+            feature_df = pd.DataFrame(list(feature_impact.items()), columns=['Feature', 'Importance'])
+            st.bar_chart(feature_df.set_index('Feature')['Importance'])
 
         except Exception as e:
             st.error(f"Something went wrong: {e}")
@@ -134,35 +121,27 @@ else:
                                 columns=['Electrostatic energy', 'Torsional energy', 'vdw hb desolve energy', 'Intermol energy'])
         prediction = model.predict(features)[0]
 
-        st.session_state.predicted = True
-        st.session_state.real_name = compound_name.strip() if compound_name.strip() else "Custom Compound"
-        st.session_state.prediction = prediction
-        st.session_state.feature_impact = model.feature_importances_
-        st.session_state.features = features
+        if compound_name.strip():
+            st.markdown(f"### 🧬 Custom Compound: `{compound_name.strip()}`")
 
-        # Scroll to prediction section
-        st.markdown("<script>window.scrollTo(0, document.body.scrollHeight);</script>", unsafe_allow_html=True)
-        st.experimental_rerun()
+        st.markdown(
+            f"<div class='prediction-highlight'>📊 Predicted Binding Affinity: <b>{prediction:.2f} kcal/mol</b></div>",
+            unsafe_allow_html=True
+        )
 
-# ------------------------ SHOW RESULTS ------------------------
-if st.session_state.predicted:
-    st.markdown(f"### 🧬 Predicted Compound: `{st.session_state.real_name}`")
-    st.markdown(
-        f"<div class='prediction-highlight'>📉 Predicted Binding Affinity: <b>{st.session_state.prediction:.2f} kcal/mol</b></div>",
-        unsafe_allow_html=True
-    )
+        importances = model.feature_importances_
+        feature_impact = dict(zip(features.columns, importances))
 
-    # Feature importance
-    importances = st.session_state.feature_impact
-    feature_names = st.session_state.features.columns
-    feature_impact = dict(zip(feature_names, importances))
-    feature_df = pd.DataFrame(list(feature_impact.items()), columns=['Feature', 'Importance'])
+        # AI Suggestion
+        st.markdown("<div class='suggestion-card'><h4>🧠 AI Suggestion:</h4>", unsafe_allow_html=True)
+        for feat, score in feature_impact.items():
+            st.markdown(f"<p>- <b>{feat}</b> is important in predicting the binding affinity. Adjust it for better results.</p>", unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
 
-    st.markdown("### 📊 Feature Importance Table")
-    st.dataframe(feature_df.style.format({"Importance": "{:.3f}"}), use_container_width=True)
-
-    st.markdown("### 📈 Feature Importance Chart")
-    st.bar_chart(feature_df.set_index("Feature"))
+        # Feature Importance
+        st.markdown("### 📌 Feature Importance (Model Weights):")
+        feature_df = pd.DataFrame(list(feature_impact.items()), columns=['Feature', 'Importance'])
+        st.bar_chart(feature_df.set_index('Feature')['Importance'])
 
 # ------------------------ FOOTER ------------------------
 st.markdown("---")

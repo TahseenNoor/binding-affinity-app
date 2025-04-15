@@ -31,8 +31,7 @@ html, body, [data-testid="stAppViewContainer"] {{
     background-color: rgba(255, 255, 255, 0.88);
     padding: 2rem;
     border-radius: 15px;
-    max-height: 100vh;
-    overflow-y: auto;
+    align-items: center;
 }}
 
 h1, h2, h3, h4 {{
@@ -56,7 +55,9 @@ h1, h2, h3, h4 {{
     border-radius: 10px;
     margin-top: 20px;
     color: black;
+    overflow-x: auto;
 }}
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -64,9 +65,13 @@ h1, h2, h3, h4 {{
 df = pd.read_csv("Cleaned_Autodock_Results.csv")
 model = joblib.load("model_with_importance.pkl")
 
-# ------------------------ ENCODE FAKE NAMES ------------------------
-df = df.copy()
-df["Custom Name"] = [f"🧬 Protein {chr(65+i)} + Ligand {chr(88+i)}" for i in range(len(df))]
+# Generate Custom Display Names
+custom_names = []
+for i, entry in enumerate(df["PROTEIN-LIGAND"]):
+    protein_fake = f"Protein {chr(65 + i % 26)}"
+    ligand_fake = f"Ligand {chr(88 + i % 3)}"
+    custom_names.append(f"🧬 {protein_fake} + {ligand_fake}")
+df["Custom Name"] = custom_names
 
 # ------------------------ HEADER ------------------------
 st.markdown("# 🧬 AFFERAZE")
@@ -78,35 +83,32 @@ mode = st.radio("Choose Prediction Mode:", ["🔎 Select from Dataset", "🧪 En
 
 # ------------------------ SELECT FROM EXISTING DATA ------------------------
 if mode == "🔎 Select from Dataset":
-    selection_dict = dict(zip(df["Custom Name"], df["PROTEIN-LIGAND"]))
-    selected_label = st.selectbox("Choose a Protein-Ligand Pair", list(selection_dict.keys()))
-
+    selected_custom_name = st.selectbox("Choose a Protein-Ligand Pair", df['Custom Name'])
+    
     if st.button("🔬 Predict Binding Affinity (from Dataset)"):
         try:
-            selected_real_name = selection_dict[selected_label]
-            row = df[df['PROTEIN-LIGAND'] == selected_real_name]
+            row = df[df['Custom Name'] == selected_custom_name]
             features = row[['Electrostatic energy', 'Torsional energy', 'vdw hb desolve energy', 'Intermol energy']].fillna(0)
             prediction = model.predict(features)[0]
 
-            st.markdown(f"### 🧬 Compound Selected: `{selected_label}`")
+            st.markdown(f"### {selected_custom_name}")
             st.markdown(
                 f"<div class='prediction-highlight'>📉 Predicted Binding Affinity: <b>{prediction:.2f} kcal/mol</b></div>",
                 unsafe_allow_html=True
             )
 
-            # Feature Importance Table + Chart
+            # Feature importance
             importances = model.feature_importances_
-            feature_df = pd.DataFrame({
-                'Feature': features.columns,
-                'Importance': importances
-            }).sort_values(by="Importance", ascending=False)
+            feature_names = features.columns
+            feature_impact = dict(zip(feature_names, importances))
 
-            st.markdown("<div class='suggestion-card'><h4>🧠 Feature Importance:</h4></div>", unsafe_allow_html=True)
-            col1, col2 = st.columns(2)
-            with col1:
-                st.dataframe(feature_df)
-            with col2:
-                st.bar_chart(feature_df.set_index('Feature'))
+            feature_df = pd.DataFrame(list(feature_impact.items()), columns=['Feature', 'Importance'])
+
+            st.markdown("### 📊 Feature Importance Table")
+            st.dataframe(feature_df.style.format({"Importance": "{:.3f}"}), use_container_width=True)
+
+            st.markdown("### 📈 Feature Importance Chart")
+            st.bar_chart(feature_df.set_index("Feature"))
 
         except Exception as e:
             st.error(f"Something went wrong: {e}")
@@ -134,17 +136,14 @@ else:
         )
 
         importances = model.feature_importances_
-        feature_df = pd.DataFrame({
-            'Feature': features.columns,
-            'Importance': importances
-        }).sort_values(by="Importance", ascending=False)
+        feature_impact = dict(zip(features.columns, importances))
+        feature_df = pd.DataFrame(list(feature_impact.items()), columns=['Feature', 'Importance'])
 
-        st.markdown("### 📌 Feature Importance (Model Weights):")
-        col1, col2 = st.columns(2)
-        with col1:
-            st.dataframe(feature_df)
-        with col2:
-            st.bar_chart(feature_df.set_index('Feature'))
+        st.markdown("### 📊 Feature Importance Table")
+        st.dataframe(feature_df.style.format({"Importance": "{:.3f}"}), use_container_width=True)
+
+        st.markdown("### 📈 Feature Importance Chart")
+        st.bar_chart(feature_df.set_index("Feature"))
 
 # ------------------------ FOOTER ------------------------
 st.markdown("---")

@@ -32,6 +32,9 @@ html, body, [data-testid="stAppViewContainer"] {{
     padding: 2rem;
     border-radius: 15px;
     align-items: center;
+    max-width: 100%;  /* Ensure the container width is flexible */
+    overflow-y: scroll; /* Allow scrolling */
+    height: 100vh;  /* Make sure the page is scrollable */
 }}
 
 h1, h2, h3, h4 {{
@@ -56,6 +59,15 @@ h1, h2, h3, h4 {{
     margin-top: 20px;
     color: black;
     overflow-x: auto;
+}}
+
+.stDataFrame {{
+    max-width: 100%;  /* Ensures table width does not overflow */
+    overflow-x: auto;  /* Allows horizontal scroll if necessary */
+}}
+
+.stBarChart {{
+    max-width: 100%;  /* Ensures the chart doesn't stretch too wide */
 }}
 </style>
 """, unsafe_allow_html=True)

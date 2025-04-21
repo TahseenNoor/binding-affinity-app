@@ -102,9 +102,11 @@ if mode == "🔬 Use Docking Energy Values":
 
     if st.button("🔬 Predict Binding Affinity (from Dataset)"):
         if protein_input and ligand_input:
-            # Combine protein and ligand into a single string
-            combined_input = f"{protein_input.strip()} + {ligand_input.strip()}"
-            
+            # Clean up inputs (remove leading/trailing spaces, ensure proper concatenation)
+            protein_input = protein_input.strip()
+            ligand_input = ligand_input.strip()
+            combined_input = f"{protein_input}-{ligand_input}"
+
             # Check if the 'PROTEIN-LIGAND' column exists and contains the input pair
             if 'PROTEIN-LIGAND' in df.columns:
                 # Direct match in the 'PROTEIN-LIGAND' column
@@ -176,7 +178,9 @@ elif mode == "🧬 Combined Input (Descriptors + Energy Values)":
 
     if st.button("🔬 Predict Combined Binding Affinity"):
         if protein_input and ligand_input:
-            combined_input = f"{protein_input.strip()} + {ligand_input.strip()}"
+            protein_input = protein_input.strip()
+            ligand_input = ligand_input.strip()
+            combined_input = f"{protein_input}-{ligand_input}"
             
             # Direct match in the 'PROTEIN-LIGAND' column
             matching_row = df[df['PROTEIN-LIGAND'] == combined_input]

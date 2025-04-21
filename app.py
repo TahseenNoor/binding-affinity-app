@@ -10,7 +10,7 @@ st.set_page_config(
     page_icon="🧬"
 )
 
-# ------------------------ BACKGROUND IMAGE ------------------------
+# ------------------------ LOAD BACKGROUND IMAGE ------------------------
 def get_base64(file_path):
     with open(file_path, "rb") as f:
         return base64.b64encode(f.read()).decode()
@@ -19,67 +19,68 @@ img_base64 = get_base64("image.png")
 
 # ------------------------ CUSTOM CSS ------------------------
 st.markdown(f"""
-<style>
-html, body, [data-testid="stAppViewContainer"] {{
-    font-family: 'Palatino Linotype', serif;
-    background-image: url("data:image/png;base64,{img_base64}");
-    background-size: cover;
-    background-attachment: fixed;
-    height: 100vh;
-    overflow-y: scroll;
-}}
-
-[data-testid="stAppViewContainer"] {{
-    background-color: rgba(255, 255, 255, 0.88);
-    padding: 2rem;
-    border-radius: 15px;
-    align-items: center;
-}}
-
-h1, h2, h3, h4 {{
-    color: #2c2c2c;
-}}
-
-.prediction-highlight {{
-    background-color: #eee;
-    padding: 1rem;
-    border-left: 5px solid #6a5acd;
-    border-radius: 10px;
-    font-size: 1.2rem;
-    font-weight: bold;
-    color: #2c2c2c;
-}}
-
-.suggestion-card {{
-    background-color: #f8f8ff;
-    padding: 1rem;
-    border-left: 4px solid #6a5acd;
-    border-radius: 10px;
-    margin-top: 20px;
-    color: black;
-    overflow-x: auto;
-}}
-
-.stButton>button {{
-    background-color: #6a5acd;
-    color: white;
-    padding: 0.5rem 1.5rem;
-    border-radius: 5px;
-    border: none;
-    cursor: pointer;
-}}
-
-.stButton>button:hover {{
-    background-color: #5a4bc7;
-}}
-</style>
+    <style>
+    html, body, [data-testid="stAppViewContainer"] {{
+        font-family: 'Palatino Linotype', serif;
+        background-image: url("data:image/png;base64,{img_base64}");
+        background-size: cover;
+        background-attachment: fixed;
+        height: 100vh;
+        overflow-y: scroll;
+    }}
+    
+    [data-testid="stAppViewContainer"] {{
+        background-color: rgba(255, 255, 255, 0.88);
+        padding: 2rem;
+        border-radius: 15px;
+        align-items: center;
+    }}
+    
+    h1, h2, h3, h4 {{
+        color: #2c2c2c;
+    }}
+    
+    .prediction-highlight {{
+        background-color: #eee;
+        padding: 1rem;
+        border-left: 5px solid #6a5acd;
+        border-radius: 10px;
+        font-size: 1.2rem;
+        font-weight: bold;
+        color: #2c2c2c;
+    }}
+    
+    .suggestion-card {{
+        background-color: #f8f8ff;
+        padding: 1rem;
+        border-left: 4px solid #6a5acd;
+        border-radius: 10px;
+        margin-top: 20px;
+        color: black;
+        overflow-x: auto;
+    }}
+    
+    .stButton>button {{
+        background-color: #6a5acd;
+        color: white;
+        padding: 0.5rem 1.5rem;
+        border-radius: 5px;
+        border: none;
+        cursor: pointer;
+    }}
+    
+    .stButton>button:hover {{
+        background-color: #5a4bc7;
+    }}
+    </style>
 """, unsafe_allow_html=True)
 
-# ------------------------ LOAD MODELS & DATA ------------------------
+# ------------------------ LOAD MODELS AND DATA ------------------------
 df = pd.read_csv("Cleaned_Autodock_Results.csv")
 energy_model = joblib.load("model_with_importance.pkl")
 descriptor_model = joblib.load("descriptor_model.pkl")
 
+# Generate mapping (keeping for now, might not need later)
 anon_map = {}
 reverse_map = {}
 for i, real_name in enumerate(df['PROTEIN-LIGAND']):
@@ -96,7 +97,8 @@ st.markdown("---")
 # ------------------------ MODE SELECTOR ------------------------
 mode = st.radio("Choose Prediction Mode:", [
     "🔬 Use Docking Energy Values",
-    "🧪 Use Molecular Descriptors"
+    "🧪 Use Molecular Descriptors",
+    "🧬 Combined Input (Descriptors + Energy Values)"
 ])
 
 # ------------------------ ENERGY MODE ------------------------
@@ -112,35 +114,25 @@ if mode == "🔬 Use Docking Energy Values":
             prediction = energy_model.predict(features)[0]
 
             st.markdown(f"### 🧬 Real Pair: `{real_name}`")
-            st.markdown(
-                f"<div class='prediction-highlight'>📉 Predicted Binding Affinity: <b>{prediction:.2f} kcal/mol</b></div>",
-                unsafe_allow_html=True
-            )
+            st.markdown(f"<div class='prediction-highlight'>📉 Predicted Binding Affinity: <b>{prediction:.2f} kcal/mol</b></div>", unsafe_allow_html=True)
 
             # Feature importance
-            importances = energy_model.feature_importances_
-            feature_names = features.columns
-            feature_impact = dict(zip(feature_names, importances))
-            feature_df = pd.DataFrame(list(feature_impact.items()), columns=['Feature', 'Importance'])
+            if hasattr(energy_model, 'feature_importances_'):
+                importances = energy_model.feature_importances_
+                feature_names = features.columns
+                feature_impact = dict(zip(feature_names, importances))
+                feature_df = pd.DataFrame(list(feature_impact.items()), columns=['Feature', 'Importance'])
 
-            st.markdown("### 📊 Feature Importance Table")
-            st.dataframe(feature_df.style.format({"Importance": "{:.3f}"}), use_container_width=True)
-            st.markdown("### 📈 Feature Importance Chart")
-            st.bar_chart(feature_df.set_index("Feature"))
+                st.markdown("### 📊 Feature Importance Table")
+                st.dataframe(feature_df.style.format({"Importance": "{:.3f}"}), use_container_width=True)
+                st.markdown("### 📈 Feature Importance Chart")
+                st.bar_chart(feature_df.set_index("Feature"))
 
-            # AI Suggestion with dynamic logic
-            st.markdown("<div class='suggestion-card'><h4>🧠 AI Suggestion:</h4>", unsafe_allow_html=True)
-            for feat in feature_names:
-                val = features.iloc[0][feat]
-                if "electro" in feat.lower() and val > 0:
-                    st.markdown(f"<p>- ⚡ High <b>{feat}</b> might reduce binding. Consider lowering it.</p>", unsafe_allow_html=True)
-                elif "torsional" in feat.lower() and val > 1.5:
-                    st.markdown(f"<p>- 🔄 High <b>{feat}</b> implies flexible molecules. May affect binding stability.</p>", unsafe_allow_html=True)
-                elif "vdw" in feat.lower() and val < -3:
-                    st.markdown(f"<p>- 🤝 Strong <b>{feat}</b> indicates good molecular interactions.</p>", unsafe_allow_html=True)
-                else:
-                    st.markdown(f"<p>- <b>{feat}</b> has moderate impact. Tweak slightly for better docking.</p>", unsafe_allow_html=True)
-            st.markdown("</div>", unsafe_allow_html=True)
+                # AI Suggestion
+                st.markdown("<div class='suggestion-card'><h4>🧠 AI Suggestion:</h4>", unsafe_allow_html=True)
+                for feat, score in feature_impact.items():
+                    st.markdown(f"<p>- <b>{feat}</b> is important in predicting the binding affinity. Adjust it for better results.</p>", unsafe_allow_html=True)
+                st.markdown("</div>", unsafe_allow_html=True)
 
         except Exception as e:
             st.error(f"Something went wrong: {e}")
@@ -157,8 +149,7 @@ elif mode == "🧪 Use Molecular Descriptors":
     acc = st.number_input("Number of H-Bond Acceptors", value=0.0)
 
     if st.button("🔮 Predict Binding Affinity (Descriptors)"):
-        features = pd.DataFrame([[mr, mw, acc, logp]],
-                                columns=['molar refractivity', 'molecular weight', 'acceptor', 'logp'])
+        features = pd.DataFrame([[mr, mw, acc, logp]], columns=['molar refractivity', 'molecular weight', 'acceptor', 'logp'])
         prediction = descriptor_model.predict(features)[0]
 
         if lig_name.strip():
@@ -166,33 +157,54 @@ elif mode == "🧪 Use Molecular Descriptors":
         if prot_name.strip():
             st.markdown(f"### 🧬 Input Protein: `{prot_name}`")
 
-        st.markdown(
-            f"<div class='prediction-highlight'>📉 Predicted Binding Affinity: <b>{prediction:.2f} kcal/mol</b></div>",
-            unsafe_allow_html=True
-        )
+        st.markdown(f"<div class='prediction-highlight'>📉 Predicted Binding Affinity: <b>{prediction:.2f} kcal/mol</b></div>", unsafe_allow_html=True)
 
-        importances = descriptor_model.feature_importances_
-        feature_impact = dict(zip(features.columns, importances))
-        feature_df = pd.DataFrame(list(feature_impact.items()), columns=['Feature', 'Importance'])
+        # Feature importance
+        if hasattr(descriptor_model, 'feature_importances_'):
+            importances = descriptor_model.feature_importances_
+            feature_impact = dict(zip(features.columns, importances))
+            feature_df = pd.DataFrame(list(feature_impact.items()), columns=['Feature', 'Importance'])
 
-        st.markdown("### 📊 Feature Importance Table")
-        st.dataframe(feature_df.style.format({"Importance": "{:.3f}"}), use_container_width=True)
-        st.markdown("### 📈 Feature Importance Chart")
-        st.bar_chart(feature_df.set_index("Feature"))
+            st.markdown("### 📊 Feature Importance Table")
+            st.dataframe(feature_df.style.format({"Importance": "{:.3f}"}), use_container_width=True)
+            st.markdown("### 📈 Feature Importance Chart")
+            st.bar_chart(feature_df.set_index("Feature"))
 
-        # Dynamic suggestions
-        st.markdown("<div class='suggestion-card'><h4>🧠 AI Suggestion:</h4>", unsafe_allow_html=True)
-        for feat in features.columns:
-            val = features.iloc[0][feat]
-            if feat == 'molecular weight' and val > 500:
-                st.markdown(f"<p>- 🧱 <b>{feat}</b> is quite high. Might hinder bioavailability.</p>", unsafe_allow_html=True)
-            elif feat == 'logp' and val > 5:
-                st.markdown(f"<p>- 💧 <b>{feat}</b> is too hydrophobic. Consider reducing it.</p>", unsafe_allow_html=True)
-            elif feat == 'acceptor' and val < 2:
-                st.markdown(f"<p>- 🧲 Low <b>{feat}</b> could mean weak hydrogen bonding. Try increasing.</p>", unsafe_allow_html=True)
-            else:
-                st.markdown(f"<p>- <b>{feat}</b> seems okay. Fine-tune as needed for better affinity.</p>", unsafe_allow_html=True)
-        st.markdown("</div>", unsafe_allow_html=True)
+            # AI Suggestion
+            st.markdown("<div class='suggestion-card'><h4>🧠 AI Suggestion:</h4>", unsafe_allow_html=True)
+            for feat, score in feature_impact.items():
+                st.markdown(f"<p>- <b>{feat}</b> influences binding predictions. Check its value for optimization.</p>", unsafe_allow_html=True)
+            st.markdown("</div>", unsafe_allow_html=True)
+
+# ------------------------ COMBINED MODE ------------------------
+elif mode == "🧬 Combined Input (Descriptors + Energy Values)":
+    st.markdown("### 🔬 Enter Energy Values and Molecular Descriptors")
+
+    # Energy values inputs
+    selected_name = st.selectbox("Choose a Protein-Ligand Pair", df['Anon Name'].unique())
+    # Enter molecular descriptor values
+    mw = st.number_input("Molecular Weight", value=0.0)
+    mr = st.number_input("Molar Refractivity", value=0.0)
+    logp = st.number_input("LogP", value=0.0)
+    acc = st.number_input("Number of H-Bond Acceptors", value=0.0)
+
+    if st.button("🔬 Predict Combined Binding Affinity"):
+        try:
+            real_name = anon_map[selected_name]
+            row = df[df['PROTEIN-LIGAND'] == real_name]
+            energy_features = row[['Electrostatic energy', 'Torsional energy', 'vdw hb desolve energy', 'Intermol energy']].fillna(0)
+
+            # Combine energy values and descriptor values
+            combined_features = pd.DataFrame([[mr, mw, acc, logp] + energy_features.values[0].tolist()],
+                                            columns=['molar refractivity', 'molecular weight', 'acceptor', 'logp'] + energy_features.columns.tolist())
+
+            # Predict using combined model (assuming you have a combined model)
+            combined_model = energy_model  # If you don't have a separate combined model, use an existing one
+            prediction = combined_model.predict(combined_features)[0]
+
+            st.markdown(f"### Predicted Binding Affinity: {prediction:.2f} kcal/mol")
+        except Exception as e:
+            st.error(f"Something went wrong: {e}")
 
 # ------------------------ FOOTER ------------------------
 st.markdown("---")

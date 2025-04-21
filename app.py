@@ -104,17 +104,20 @@ mode = st.radio("Choose Prediction Mode:", [
 
 # ------------------------ ENERGY MODE ------------------------
 if mode == "🔬 Use Docking Energy Values":
-    st.markdown("### 🔍 Enter Protein-Ligand Pair")
+    st.markdown("### 🔍 Enter Protein and Ligand Names")
     
-    # User input for Protein-Ligand Pair
-    protein_ligand_input = st.text_input("Enter Protein-Ligand Pair:")
+    # User input for Protein and Ligand Names
+    protein_input = st.text_input("Enter Protein Name:")
+    ligand_input = st.text_input("Enter Ligand Name:")
 
     if st.button("🔬 Predict Binding Affinity (from Dataset)"):
-        if protein_ligand_input:
-            # Fuzzy matching
-            best_match, score = process.extractOne(protein_ligand_input, df['PROTEIN-LIGAND'])
+        if protein_input and ligand_input:
+            # Generate the combined Protein-Ligand name from inputs
+            combined_input = protein_input + " + " + ligand_input
             
-            # Check if the match score is high enough
+            # Fuzzy matching to find best match
+            best_match, score = process.extractOne(combined_input, df['PROTEIN-LIGAND'])
+            
             if score >= 80:
                 st.write(f"Best matched protein-ligand pair: {best_match} with score: {score}")
                 
@@ -147,7 +150,7 @@ if mode == "🔬 Use Docking Energy Values":
             else:
                 st.error("The protein-ligand names you entered do not match any data with a good enough score. Please check your inputs.")
         else:
-            st.error("Please enter a Protein-Ligand pair.")
+            st.error("Please enter both a Protein and Ligand name.")
             
 # ------------------------ DESCRIPTOR MODE ------------------------
 elif mode == "🧪 Use Molecular Descriptors":

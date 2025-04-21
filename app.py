@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 import joblib
 import base64
-from fuzzywuzzy import process
 
 # ------------------------ PAGE CONFIG ------------------------
 st.set_page_config(
@@ -103,27 +102,26 @@ if mode == "🔬 Use Docking Energy Values":
 
     if st.button("🔬 Predict Binding Affinity (from Dataset)"):
         if protein_input and ligand_input:
-            # Generate the combined Protein-Ligand name from inputs
+            # Combine protein and ligand into a single string
             combined_input = f"{protein_input.strip()} + {ligand_input.strip()}"
             
-            # Check if the 'PROTEIN-LIGAND' column exists and is not empty
-            if 'PROTEIN-LIGAND' in df.columns and df['PROTEIN-LIGAND'].notnull().any():
-                # Fuzzy matching to find best match
-                best_match, score = process.extractOne(combined_input, df['PROTEIN-LIGAND'])
+            # Check if the 'PROTEIN-LIGAND' column exists and contains the input pair
+            if 'PROTEIN-LIGAND' in df.columns:
+                # Direct match in the 'PROTEIN-LIGAND' column
+                matching_row = df[df['PROTEIN-LIGAND'] == combined_input]
                 
-                if score >= 80:
-                    st.write(f"Best matched protein-ligand pair: {best_match} with score: {score}")
+                if not matching_row.empty:
+                    st.write(f"Best matched protein-ligand pair: `{combined_input}`")
                     
                     # Fetch data and make prediction
-                    row = df[df['PROTEIN-LIGAND'] == best_match]
-                    features = row[['Electrostatic energy', 'Torsional energy', 'vdw hb desolve energy', 'Intermol energy']].fillna(0)
+                    features = matching_row[['Electrostatic energy', 'Torsional energy', 'vdw hb desolve energy', 'Intermol energy']].fillna(0)
                     prediction = energy_model.predict(features)[0]
                     
                     # Display prediction and result
-                    st.markdown(f"### 🧬 Best Matched Pair: `{best_match}`")
+                    st.markdown(f"### 🧬 Best Matched Pair: `{combined_input}`")
                     st.markdown(f"<div class='prediction-highlight'>📉 Predicted Binding Affinity: <b>{prediction:.2f} kcal/mol</b></div>", unsafe_allow_html=True)
                     
-                    # Feature importance
+                    # Feature importance (if available)
                     if hasattr(energy_model, 'feature_importances_'):
                         importances = energy_model.feature_importances_
                         feature_names = features.columns
@@ -132,16 +130,9 @@ if mode == "🔬 Use Docking Energy Values":
                         
                         st.markdown("### 📊 Feature Importance Table")
                         st.dataframe(feature_df.style.format({"Importance": "{:.3f}"}), use_container_width=True)
-                        st.markdown("### 📈 Feature Importance Chart")
-                        st.bar_chart(feature_df.set_index("Feature"))
-                    
-                        # AI Suggestion
-                        st.markdown("<div class='suggestion-card'><h4>🧠 AI Suggestion:</h4>", unsafe_allow_html=True)
-                        for feat, score in feature_impact.items():
-                            st.markdown(f"<p>- <b>{feat}</b> is important in predicting the binding affinity. Adjust it for better results.</p>", unsafe_allow_html=True)
-                        st.markdown("</div>", unsafe_allow_html=True)
+                        
                 else:
-                    st.error("The protein-ligand names you entered do not match any data with a good enough score. Please check your inputs.")
+                    st.error(f"No match found for the protein-ligand pair: `{combined_input}`. Please check your inputs.")
             else:
                 st.error("No valid Protein-Ligand data found in the dataset. Please check the dataset.")
         else:
@@ -169,23 +160,6 @@ elif mode == "🧪 Use Molecular Descriptors":
 
         st.markdown(f"<div class='prediction-highlight'>📉 Predicted Binding Affinity: <b>{prediction:.2f} kcal/mol</b></div>", unsafe_allow_html=True)
 
-        # Feature importance
-        if hasattr(descriptor_model, 'feature_importances_'):
-            importances = descriptor_model.feature_importances_
-            feature_impact = dict(zip(features.columns, importances))
-            feature_df = pd.DataFrame(list(feature_impact.items()), columns=['Feature', 'Importance'])
-
-            st.markdown("### 📊 Feature Importance Table")
-            st.dataframe(feature_df.style.format({"Importance": "{:.3f}"}), use_container_width=True)
-            st.markdown("### 📈 Feature Importance Chart")
-            st.bar_chart(feature_df.set_index("Feature"))
-
-            # AI Suggestion
-            st.markdown("<div class='suggestion-card'><h4>🧠 AI Suggestion:</h4>", unsafe_allow_html=True)
-            for feat, score in feature_impact.items():
-                st.markdown(f"<p>- <b>{feat}</b> influences binding predictions. Check its value for optimization.</p>", unsafe_allow_html=True)
-            st.markdown("</div>", unsafe_allow_html=True)
-
 # ------------------------ COMBINED MODE ------------------------
 elif mode == "🧬 Combined Input (Descriptors + Energy Values)":
     st.markdown("### 🔬 Enter Energy Values and Molecular Descriptors")
@@ -204,7 +178,19 @@ elif mode == "🧬 Combined Input (Descriptors + Energy Values)":
         if protein_input and ligand_input:
             combined_input = f"{protein_input.strip()} + {ligand_input.strip()}"
             
-            # Fuzzy matching and prediction code similar to the above
+            # Direct match in the 'PROTEIN-LIGAND' column
+            matching_row = df[df['PROTEIN-LIGAND'] == combined_input]
+            
+            if not matching_row.empty:
+                # Fetch data and make prediction
+                features = matching_row[['Electrostatic energy', 'Torsional energy', 'vdw hb desolve energy', 'Intermol energy']].fillna(0)
+                prediction = energy_model.predict(features)[0]
+                
+                # Display prediction and result
+                st.markdown(f"### 🧬 Best Matched Pair: `{combined_input}`")
+                st.markdown(f"<div class='prediction-highlight'>📉 Predicted Binding Affinity: <b>{prediction:.2f} kcal/mol</b></div>", unsafe_allow_html=True)
+            else:
+                st.error(f"No match found for the protein-ligand pair: `{combined_input}`. Please check your inputs.")
 
 # ------------------------ FOOTER ------------------------
 st.markdown("---")

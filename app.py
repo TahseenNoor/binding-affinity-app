@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import joblib
 import base64
+from difflib import get_close_matches
 
 # ------------------------ PAGE CONFIG ------------------------
 st.set_page_config(page_title="AFFERAZE", layout="wide", page_icon="🧬")
@@ -28,9 +29,6 @@ st.markdown(f"""
         background-color: rgba(255, 255, 255, 0.88);
         padding: 2rem;
         border-radius: 15px;
-    }}
-    h1, h2, h3, h4 {{
-        color: #2c2c2c;
     }}
     .prediction-highlight {{
         background-color: #eee;
@@ -59,29 +57,41 @@ if st.button("🔍 Predict Binding Affinity"):
     if not protein_input or not ligand_input:
         st.warning("Please enter both Protein and Ligand names.")
     else:
-        pair_name = f"{protein_input.strip()} - {ligand_input.strip()}"
-        row = df[df['PROTEIN-LIGAND'].str.strip() == pair_name]
+        user_pair = f"{protein_input.strip()} - {ligand_input.strip()}"
+        all_pairs = df['PROTEIN-LIGAND'].str.strip().tolist()
 
-        if row.empty:
-            st.error(f"❌ The combination '{pair_name}' was not found in the dataset.")
-        else:
+        # Check exact match
+        if user_pair in all_pairs:
+            row = df[df['PROTEIN-LIGAND'].str.strip() == user_pair]
             try:
                 features = row[['Electrostatic energy', 'Torsional energy', 'vdw hb desolve energy', 'Intermol energy']].fillna(0)
                 prediction = energy_model.predict(features)[0]
 
-                st.success(f"✅ Match found: {pair_name}")
+                st.success(f"✅ Match found: {user_pair}")
                 st.markdown(f"<div class='prediction-highlight'>📉 Predicted Binding Affinity: <b>{prediction:.2f} kcal/mol</b></div>", unsafe_allow_html=True)
 
                 # Feature Importance
                 if hasattr(energy_model, 'feature_importances_'):
                     importances = energy_model.feature_importances_
-                    feature_names = features.columns
-                    feature_impact = dict(zip(feature_names, importances))
-                    feature_df = pd.DataFrame(list(feature_impact.items()), columns=['Feature', 'Importance'])
-
+                    feature_df = pd.DataFrame({
+                        "Feature": features.columns,
+                        "Importance": importances
+                    })
                     st.markdown("### 📊 Feature Importance")
                     st.dataframe(feature_df.style.format({"Importance": "{:.3f}"}), use_container_width=True)
                     st.bar_chart(feature_df.set_index("Feature"))
 
             except Exception as e:
                 st.error(f"Something went wrong: {e}")
+
+        else:
+            # Fuzzy Matching for Suggestions
+            suggestions = get_close_matches(user_pair, all_pairs, n=3, cutoff=0.6)
+            st.error(f"❌ No exact match found for '{user_pair}'.")
+
+            if suggestions:
+                st.markdown("👀 Did you mean one of these?")
+                for s in suggestions:
+                    st.markdown(f"- `{s}`")
+            else:
+                st.info("No similar entries found. Please double-check your inputs.")

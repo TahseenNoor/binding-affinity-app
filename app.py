@@ -80,15 +80,6 @@ df = pd.read_csv("Cleaned_Autodock_Results.csv")
 energy_model = joblib.load("model_with_importance.pkl")
 descriptor_model = joblib.load("descriptor_model.pkl")
 
-# Generate mapping (keeping for now, might not need later)
-anon_map = {}
-reverse_map = {}
-for i, real_name in enumerate(df['PROTEIN-LIGAND']):
-    anon_name = f"🧬 Protein {chr(65 + i)} + Ligand {chr(88 + (i % 3))}"
-    anon_map[anon_name] = real_name
-    reverse_map[real_name] = anon_name
-df['Anon Name'] = df['PROTEIN-LIGAND'].map(reverse_map)
-
 # ------------------------ HEADER ------------------------
 st.markdown("# 🧬 AFFERAZE")
 st.markdown("Predict binding affinity using **energy values** or **molecular descriptors** 💊")
@@ -104,36 +95,45 @@ mode = st.radio("Choose Prediction Mode:", [
 # ------------------------ ENERGY MODE ------------------------
 if mode == "🔬 Use Docking Energy Values":
     st.markdown("### 🔍 Select or Enter Energy-Based Values")
-    selected_name = st.selectbox("Choose a Protein-Ligand Pair", df['Anon Name'].unique())
+
+    # Extract protein and ligand options
+    protein_options = sorted(set(name.split("-")[0].strip() for name in df['PROTEIN-LIGAND']))
+    ligand_options = sorted(set(name.split("-")[1].strip() for name in df['PROTEIN-LIGAND']))
+
+    selected_protein = st.selectbox("Choose a Protein", protein_options)
+    selected_ligand = st.selectbox("Choose a Ligand", ligand_options)
 
     if st.button("🔬 Predict Binding Affinity (from Dataset)"):
         try:
-            real_name = anon_map[selected_name]
-            row = df[df['PROTEIN-LIGAND'] == real_name]
-            features = row[['Electrostatic energy', 'Torsional energy', 'vdw hb desolve energy', 'Intermol energy']].fillna(0)
-            prediction = energy_model.predict(features)[0]
+            pair_name = f"{selected_protein} - {selected_ligand}"
+            row = df[df['PROTEIN-LIGAND'] == pair_name]
 
-            st.markdown(f"### 🧬 Real Pair: `{real_name}`")
-            st.markdown(f"<div class='prediction-highlight'>📉 Predicted Binding Affinity: <b>{prediction:.2f} kcal/mol</b></div>", unsafe_allow_html=True)
+            if row.empty:
+                st.warning("This Protein-Ligand combo doesn't exist in the dataset.")
+            else:
+                features = row[['Electrostatic energy', 'Torsional energy', 'vdw hb desolve energy', 'Intermol energy']].fillna(0)
+                prediction = energy_model.predict(features)[0]
 
-            # Feature importance
-            if hasattr(energy_model, 'feature_importances_'):
-                importances = energy_model.feature_importances_
-                feature_names = features.columns
-                feature_impact = dict(zip(feature_names, importances))
-                feature_df = pd.DataFrame(list(feature_impact.items()), columns=['Feature', 'Importance'])
+                st.markdown(f"### 🧬 Real Pair: `{pair_name}`")
+                st.markdown(f"<div class='prediction-highlight'>📉 Predicted Binding Affinity: <b>{prediction:.2f} kcal/mol</b></div>", unsafe_allow_html=True)
 
-                st.markdown("### 📊 Feature Importance Table")
-                st.dataframe(feature_df.style.format({"Importance": "{:.3f}"}), use_container_width=True)
-                st.markdown("### 📈 Feature Importance Chart")
-                st.bar_chart(feature_df.set_index("Feature"))
+                # Feature importance
+                if hasattr(energy_model, 'feature_importances_'):
+                    importances = energy_model.feature_importances_
+                    feature_names = features.columns
+                    feature_impact = dict(zip(feature_names, importances))
+                    feature_df = pd.DataFrame(list(feature_impact.items()), columns=['Feature', 'Importance'])
 
-                # AI Suggestion
-                st.markdown("<div class='suggestion-card'><h4>🧠 AI Suggestion:</h4>", unsafe_allow_html=True)
-                for feat, score in feature_impact.items():
-                    st.markdown(f"<p>- <b>{feat}</b> is important in predicting the binding affinity. Adjust it for better results.</p>", unsafe_allow_html=True)
-                st.markdown("</div>", unsafe_allow_html=True)
+                    st.markdown("### 📊 Feature Importance Table")
+                    st.dataframe(feature_df.style.format({"Importance": "{:.3f}"}), use_container_width=True)
+                    st.markdown("### 📈 Feature Importance Chart")
+                    st.bar_chart(feature_df.set_index("Feature"))
 
+                    # AI Suggestion
+                    st.markdown("<div class='suggestion-card'><h4>🧠 AI Suggestion:</h4>", unsafe_allow_html=True)
+                    for feat, score in feature_impact.items():
+                        st.markdown(f"<p>- <b>{feat}</b> is important in predicting the binding affinity. Adjust it for better results.</p>", unsafe_allow_html=True)
+                    st.markdown("</div>", unsafe_allow_html=True)
         except Exception as e:
             st.error(f"Something went wrong: {e}")
 
@@ -180,9 +180,14 @@ elif mode == "🧪 Use Molecular Descriptors":
 elif mode == "🧬 Combined Input (Descriptors + Energy Values)":
     st.markdown("### 🔬 Enter Energy Values and Molecular Descriptors")
 
-    # Energy values inputs
-    selected_name = st.selectbox("Choose a Protein-Ligand Pair", df['Anon Name'].unique())
-    # Enter molecular descriptor values
+    # Separate selectors
+    protein_options = sorted(set(name.split("-")[0].strip() for name in df['PROTEIN-LIGAND']))
+    ligand_options = sorted(set(name.split("-")[1].strip() for name in df['PROTEIN-LIGAND']))
+
+    selected_protein = st.selectbox("Choose a Protein", protein_options)
+    selected_ligand = st.selectbox("Choose a Ligand", ligand_options)
+
+    # Descriptors
     mw = st.number_input("Molecular Weight", value=0.0)
     mr = st.number_input("Molar Refractivity", value=0.0)
     logp = st.number_input("LogP", value=0.0)
@@ -190,19 +195,23 @@ elif mode == "🧬 Combined Input (Descriptors + Energy Values)":
 
     if st.button("🔬 Predict Combined Binding Affinity"):
         try:
-            real_name = anon_map[selected_name]
-            row = df[df['PROTEIN-LIGAND'] == real_name]
-            energy_features = row[['Electrostatic energy', 'Torsional energy', 'vdw hb desolve energy', 'Intermol energy']].fillna(0)
+            pair_name = f"{selected_protein} - {selected_ligand}"
+            row = df[df['PROTEIN-LIGAND'] == pair_name]
 
-            # Combine energy values and descriptor values
-            combined_features = pd.DataFrame([[mr, mw, acc, logp] + energy_features.values[0].tolist()],
-                                            columns=['molar refractivity', 'molecular weight', 'acceptor', 'logp'] + energy_features.columns.tolist())
+            if row.empty:
+                st.warning("This Protein-Ligand combo doesn't exist in the dataset.")
+            else:
+                energy_features = row[['Electrostatic energy', 'Torsional energy', 'vdw hb desolve energy', 'Intermol energy']].fillna(0)
 
-            # Predict using combined model (assuming you have a combined model)
-            combined_model = energy_model  # If you don't have a separate combined model, use an existing one
-            prediction = combined_model.predict(combined_features)[0]
+                # Combine energy + descriptors
+                combined_features = pd.DataFrame([[mr, mw, acc, logp] + energy_features.values[0].tolist()],
+                                                 columns=['molar refractivity', 'molecular weight', 'acceptor', 'logp'] + energy_features.columns.tolist())
 
-            st.markdown(f"### Predicted Binding Affinity: {prediction:.2f} kcal/mol")
+                combined_model = energy_model  # using same model as placeholder
+                prediction = combined_model.predict(combined_features)[0]
+
+                st.markdown(f"### 🧬 Real Pair: `{pair_name}`")
+                st.markdown(f"<div class='prediction-highlight'>📉 Predicted Binding Affinity: <b>{prediction:.2f} kcal/mol</b></div>", unsafe_allow_html=True)
         except Exception as e:
             st.error(f"Something went wrong: {e}")
 

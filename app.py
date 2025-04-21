@@ -102,41 +102,35 @@ if mode == "🔬 Use Docking Energy Values":
 
     if st.button("🔬 Predict Binding Affinity (from Dataset)"):
         if protein_input and ligand_input:
-            # Clean up inputs (remove leading/trailing spaces, ensure proper concatenation)
-            protein_input = protein_input.strip()
-            ligand_input = ligand_input.strip()
+            # Clean up inputs (remove leading/trailing spaces, lowercase for consistency)
+            protein_input = protein_input.strip().lower()
+            ligand_input = ligand_input.strip().lower()
+            
+            # Create the combined protein-ligand string (also in lowercase)
             combined_input = f"{protein_input}-{ligand_input}"
-
-            # Check if the 'PROTEIN-LIGAND' column exists and contains the input pair
-            if 'PROTEIN-LIGAND' in df.columns:
-                # Direct match in the 'PROTEIN-LIGAND' column
-                matching_row = df[df['PROTEIN-LIGAND'] == combined_input]
+            
+            # Print out the combined input to check what we are matching against
+            st.write(f"Checking for protein-ligand pair: `{combined_input}`")
+            
+            # Clean up the dataset: convert to lowercase and strip spaces for matching
+            df['PROTEIN-LIGAND'] = df['PROTEIN-LIGAND'].str.strip().str.lower()
+            
+            # Check if the 'PROTEIN-LIGAND' column contains the input pair
+            matching_row = df[df['PROTEIN-LIGAND'] == combined_input]
+            
+            if not matching_row.empty:
+                st.write(f"Best matched protein-ligand pair: `{combined_input}`")
                 
-                if not matching_row.empty:
-                    st.write(f"Best matched protein-ligand pair: `{combined_input}`")
-                    
-                    # Fetch data and make prediction
-                    features = matching_row[['Electrostatic energy', 'Torsional energy', 'vdw hb desolve energy', 'Intermol energy']].fillna(0)
-                    prediction = energy_model.predict(features)[0]
-                    
-                    # Display prediction and result
-                    st.markdown(f"### 🧬 Best Matched Pair: `{combined_input}`")
-                    st.markdown(f"<div class='prediction-highlight'>📉 Predicted Binding Affinity: <b>{prediction:.2f} kcal/mol</b></div>", unsafe_allow_html=True)
-                    
-                    # Feature importance (if available)
-                    if hasattr(energy_model, 'feature_importances_'):
-                        importances = energy_model.feature_importances_
-                        feature_names = features.columns
-                        feature_impact = dict(zip(feature_names, importances))
-                        feature_df = pd.DataFrame(list(feature_impact.items()), columns=['Feature', 'Importance'])
-                        
-                        st.markdown("### 📊 Feature Importance Table")
-                        st.dataframe(feature_df.style.format({"Importance": "{:.3f}"}), use_container_width=True)
-                        
-                else:
-                    st.error(f"No match found for the protein-ligand pair: `{combined_input}`. Please check your inputs.")
+                # Fetch data and make prediction
+                features = matching_row[['Electrostatic energy', 'Torsional energy', 'vdw hb desolve energy', 'Intermol energy']].fillna(0)
+                prediction = energy_model.predict(features)[0]
+                
+                # Display prediction and result
+                st.markdown(f"### 🧬 Best Matched Pair: `{combined_input}`")
+                st.markdown(f"<div class='prediction-highlight'>📉 Predicted Binding Affinity: <b>{prediction:.2f} kcal/mol</b></div>", unsafe_allow_html=True)
+                
             else:
-                st.error("No valid Protein-Ligand data found in the dataset. Please check the dataset.")
+                st.error(f"No match found for the protein-ligand pair: `{combined_input}`. Please check your inputs.")
         else:
             st.error("Please enter both a Protein and Ligand name.")
 
@@ -178,11 +172,17 @@ elif mode == "🧬 Combined Input (Descriptors + Energy Values)":
 
     if st.button("🔬 Predict Combined Binding Affinity"):
         if protein_input and ligand_input:
-            protein_input = protein_input.strip()
-            ligand_input = ligand_input.strip()
+            protein_input = protein_input.strip().lower()
+            ligand_input = ligand_input.strip().lower()
             combined_input = f"{protein_input}-{ligand_input}"
             
-            # Direct match in the 'PROTEIN-LIGAND' column
+            # Print out the combined input to check what we are matching against
+            st.write(f"Checking for protein-ligand pair: `{combined_input}`")
+            
+            # Clean up the dataset: convert to lowercase and strip spaces for matching
+            df['PROTEIN-LIGAND'] = df['PROTEIN-LIGAND'].str.strip().str.lower()
+            
+            # Check if the 'PROTEIN-LIGAND' column contains the input pair
             matching_row = df[df['PROTEIN-LIGAND'] == combined_input]
             
             if not matching_row.empty:

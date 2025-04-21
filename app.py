@@ -81,7 +81,7 @@ df = pd.read_csv("Cleaned_Autodock_Results.csv")
 energy_model = joblib.load("model_with_importance.pkl")
 descriptor_model = joblib.load("descriptor_model.pkl")
 
-# Generate mapping for protein-ligand pairs to anonymize them
+# ------------------------ LOAD PROTEIN-LIGAND MAPPING ------------------------
 anon_map = {}
 reverse_map = {}
 for i, real_name in enumerate(df['PROTEIN-LIGAND']):
@@ -104,28 +104,27 @@ mode = st.radio("Choose Prediction Mode:", [
 
 # ------------------------ ENERGY MODE ------------------------
 if mode == "🔬 Use Docking Energy Values":
-    st.markdown("### 🔍 Enter Protein and Ligand Names")
+    st.markdown("### 🔍 Enter Protein-Ligand Pair")
     
-    # User input for Protein and Ligand
-    protein_input = st.text_input("Enter Protein Name:")
-    ligand_input = st.text_input("Enter Ligand Name:")
+    # User input for Protein-Ligand Pair
+    protein_ligand_input = st.text_input("Enter Protein-Ligand Pair:")
 
     if st.button("🔬 Predict Binding Affinity (from Dataset)"):
-        if protein_input and ligand_input:
+        if protein_ligand_input:
             # Fuzzy matching
-            protein_best_match, protein_score = process.extractOne(protein_input, df['PROTEIN-LIGAND'])
-            ligand_best_match, ligand_score = process.extractOne(ligand_input, df['PROTEIN-LIGAND'])
+            best_match, score = process.extractOne(protein_ligand_input, df['PROTEIN-LIGAND'])
             
-            # Check if the score is good enough to proceed
-            if protein_score >= 80 and ligand_score >= 80:
-                st.write(f"Best matched protein-ligand pair: {protein_best_match} with score: {protein_score}")
+            # Check if the match score is high enough
+            if score >= 80:
+                st.write(f"Best matched protein-ligand pair: {best_match} with score: {score}")
+                
                 # Fetch data and make prediction
-                row = df[df['PROTEIN-LIGAND'] == protein_best_match]
+                row = df[df['PROTEIN-LIGAND'] == best_match]
                 features = row[['Electrostatic energy', 'Torsional energy', 'vdw hb desolve energy', 'Intermol energy']].fillna(0)
                 prediction = energy_model.predict(features)[0]
                 
                 # Display prediction and result
-                st.markdown(f"### 🧬 Best Matched Pair: `{protein_best_match}`")
+                st.markdown(f"### 🧬 Best Matched Pair: `{best_match}`")
                 st.markdown(f"<div class='prediction-highlight'>📉 Predicted Binding Affinity: <b>{prediction:.2f} kcal/mol</b></div>", unsafe_allow_html=True)
 
                 # Feature importance
@@ -148,7 +147,7 @@ if mode == "🔬 Use Docking Energy Values":
             else:
                 st.error("The protein-ligand names you entered do not match any data with a good enough score. Please check your inputs.")
         else:
-            st.error("Please enter both Protein and Ligand names.")
+            st.error("Please enter a Protein-Ligand pair.")
             
 # ------------------------ DESCRIPTOR MODE ------------------------
 elif mode == "🧪 Use Molecular Descriptors":
@@ -194,8 +193,7 @@ elif mode == "🧪 Use Molecular Descriptors":
 elif mode == "🧬 Combined Input (Descriptors + Energy Values)":
     st.markdown("### 🔬 Enter Energy Values and Molecular Descriptors")
 
-    protein_input = st.text_input("Enter Protein Name:")
-    ligand_input = st.text_input("Enter Ligand Name:")
+    protein_ligand_input = st.text_input("Enter Protein-Ligand Pair:")
 
     mw = st.number_input("Molecular Weight", value=0.0)
     mr = st.number_input("Molar Refractivity", value=0.0)
@@ -205,10 +203,9 @@ elif mode == "🧬 Combined Input (Descriptors + Energy Values)":
     if st.button("🔬 Predict Combined Binding Affinity"):
         try:
             # Fuzzy matching to find best protein-ligand pair
-            protein_best_match, _ = process.extractOne(protein_input, df['PROTEIN-LIGAND'])
-            ligand_best_match, _ = process.extractOne(ligand_input, df['PROTEIN-LIGAND'])
+            best_match, _ = process.extractOne(protein_ligand_input, df['PROTEIN-LIGAND'])
             
-            row = df[df['PROTEIN-LIGAND'] == protein_best_match]
+            row = df[df['PROTEIN-LIGAND'] == best_match]
             energy_features = row[['Electrostatic energy', 'Torsional energy', 'vdw hb desolve energy', 'Intermol energy']].fillna(0)
 
             # Combine energy values and descriptor values
@@ -219,7 +216,7 @@ elif mode == "🧬 Combined Input (Descriptors + Energy Values)":
             combined_model = energy_model  # If you don't have a separate combined model, use an existing one
             prediction = combined_model.predict(combined_features)[0]
 
-            st.markdown(f"### Predicted Binding Affinity for {protein_best_match} and {ligand_best_match}: {prediction:.2f} kcal/mol")
+            st.markdown(f"### Predicted Binding Affinity for {best_match}: {prediction:.2f} kcal/mol")
         except Exception as e:
             st.error(f"Something went wrong: {e}")
 

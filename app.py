@@ -74,6 +74,10 @@ st.markdown(f"""
 df = pd.read_csv("Cleaned_Autodock_Results.csv")
 df['PROTEIN-LIGAND'] = df['PROTEIN-LIGAND'].astype(str).str.strip().str.lower()
 
+# Filter dataset to only include valid proteins
+valid_proteins = ["stat1", "ace", "mmp3", "tnf", "tlr4", "cyp27b1"]
+df = df[df['PROTEIN-LIGAND'].apply(lambda x: x.split('-')[0] in valid_proteins)]
+
 energy_model = joblib.load("model_with_importance.pkl")
 descriptor_model = joblib.load("descriptor_model.pkl")
 
@@ -94,7 +98,7 @@ mode = st.radio("Choose Prediction Mode:", [
 if mode == "🔬 Use Docking Energy Values":
     st.markdown("### 🔍 Select Protein and Enter Ligand")
 
-    protein_input = st.selectbox("Choose a Protein", ["STAT1", "STAT2", "STAT3", "STAT4", "STAT5A", "STAT5B"])
+    protein_input = st.selectbox("Choose a Protein", ["STAT1", "ACE", "MMP3", "TNF", "TLR4", "CYP27B1"])
     ligand_input = st.text_input("Enter Ligand Name:")
 
     if st.button("🔬 Predict Binding Affinity (from Dataset)"):

@@ -35,7 +35,12 @@ st.markdown(f"""
         border-radius: 15px;
         align-items: center;
     }}
-    h1, h2, h3, h4 {{
+    h1.title-aff {{
+        font-family: 'Garamond', serif;
+        font-size: 3rem !important;
+        color: #2c2c2c;
+    }}
+    h2, h3, h4 {{
         color: #2c2c2c;
     }}
     .prediction-highlight {{
@@ -74,16 +79,17 @@ st.markdown(f"""
 df = pd.read_csv("Cleaned_Autodock_Results.csv")
 df['PROTEIN-LIGAND'] = df['PROTEIN-LIGAND'].astype(str).str.strip().str.lower()
 
+# Normalize all STAT variants to just "stat"
+df['PROTEIN-LIGAND'] = df['PROTEIN-LIGAND'].str.replace(r'stat\d*', 'stat', regex=True)
+
 valid_proteins = ["stat", "ace", "mmp3", "tnf", "tlr4", "cyp27b1"]
-df['PROTEIN'] = df['PROTEIN-LIGAND'].apply(lambda x: x.split('-')[0])
-df['LIGAND'] = df['PROTEIN-LIGAND'].apply(lambda x: x.split('-')[1])
-df = df[df['PROTEIN'].isin(valid_proteins)]
+df = df[df['PROTEIN-LIGAND'].apply(lambda x: x.split('-')[0] in valid_proteins)]
 
 energy_model = joblib.load("model_with_importance.pkl")
 descriptor_model = joblib.load("descriptor_model.pkl")
 
 # ------------------------ HEADER ------------------------
-st.markdown("# 🧬 AFFERAZE")
+st.markdown("<h1 class='title-aff'>🧬 AFFERAZE</h1>", unsafe_allow_html=True)
 st.markdown("Predict binding affinity using **energy values** or **molecular descriptors** 💊")
 st.markdown("---")
 
@@ -92,8 +98,7 @@ mode = st.radio("Choose Prediction Mode:", [
     "🔬 Use Docking Energy Values",
     "🧪 Use Molecular Descriptors",
     "🧬 Combined Input (Descriptors + Energy Values)",
-    "🛠️ Manual Input (Energy Only, Any Names)",
-    "🪄 Magic Mode (Any Known Ligand)"
+    "🛠️ Manual Input (Energy Only, Any Names)"
 ])
 
 # ------------------------ ENERGY MODE ------------------------
@@ -168,38 +173,3 @@ elif mode == "🛠️ Manual Input (Energy Only, Any Names)":
         features = pd.DataFrame([[e1, e2, e3, e4]], columns=['Electrostatic energy', 'Torsional energy', 'vdw hb desolve energy', 'Intermol energy'])
         prediction = energy_model.predict(features)[0]
         st.markdown(f"<div class='prediction-highlight'>🛠️ Manual Prediction: <b>{prediction:.2f} kcal/mol</b></div>", unsafe_allow_html=True)
-
-# ------------------------ MAGIC MODE ------------------------
-elif mode == "🪄 Magic Mode (Any Known Ligand)":
-    st.markdown("### 🪄 Enter Any Ligand + Protein Name (flexible match)")
-    protein_input = st.selectbox("Choose a Protein", ["STAT", "ACE", "MMP3", "TNF", "TLR4", "CYP27B1"])
-    ligand_input = st.text_input("Enter Ligand Name:")
-
-    if st.button("🪄 Predict Anyway!"):
-        protein_input = protein_input.strip().lower()
-        ligand_input = ligand_input.strip().lower()
-        query_key = f"{protein_input}-{ligand_input}"
-
-        # Try exact match first
-        exact = df[df['PROTEIN-LIGAND'] == query_key]
-        if not exact.empty:
-            features = exact[['Electrostatic energy', 'Torsional energy', 'vdw hb desolve energy', 'Intermol energy']].fillna(0)
-            prediction = energy_model.predict(features)[0]
-            st.markdown(f"<div class='prediction-highlight'>✨ Magic Prediction (Exact): <b>{prediction:.2f} kcal/mol</b></div>", unsafe_allow_html=True)
-        else:
-            # Try finding ligand match regardless of protein
-            st.warning("Exact match not found — searching by ligand only ⚡️")
-            ligand_match = df[df['LIGAND'] == ligand_input]
-
-            if not ligand_match.empty:
-                row = ligand_match.iloc[0]
-                features = row[['Electrostatic energy', 'Torsional energy', 'vdw hb desolve energy', 'Intermol energy']].fillna(0).to_frame().T
-                prediction = energy_model.predict(features)[0]
-                st.markdown(f"""
-                    <div class='prediction-highlight'>
-                        🔮 Used `{row['PROTEIN-LIGAND']}` instead<br>
-                        ✨ Magic Prediction (Closest): <b>{prediction:.2f} kcal/mol</b>
-                    </div>
-                """, unsafe_allow_html=True)
-            else:
-                st.error("🫥 Couldn't find any match for that ligand either.")

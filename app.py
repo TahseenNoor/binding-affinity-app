@@ -74,8 +74,20 @@ st.markdown(f"""
 df = pd.read_csv("Cleaned_Autodock_Results.csv")
 df['PROTEIN-LIGAND'] = df['PROTEIN-LIGAND'].astype(str).str.strip().str.lower()
 
-valid_proteins = ["stat1", "ace", "mmp3", "tnf", "tlr4", "cyp27b1"]
-df = df[df['PROTEIN-LIGAND'].apply(lambda x: x.split('-')[0] in valid_proteins)]
+# ------------------------ SIMPLIFY PROTEINS ------------------------
+def simplify_protein(name):
+    prot = name.split('-')[0].lower()
+    if prot.startswith("stat"):
+        return "stat"
+    return prot
+
+df['PROTEIN'] = df['PROTEIN-LIGAND'].apply(simplify_protein)
+df['LIGAND'] = df['PROTEIN-LIGAND'].apply(lambda x: x.split('-')[1].lower())
+df['PL_COMBO'] = df['PROTEIN'] + "-" + df['LIGAND']
+
+# Keep only valid simplified proteins
+valid_proteins = ["stat", "ace", "mmp3", "tnf", "tlr4", "cyp27b1"]
+df = df[df['PROTEIN'].isin(valid_proteins)]
 
 energy_model = joblib.load("model_with_importance.pkl")
 descriptor_model = joblib.load("descriptor_model.pkl")
@@ -96,7 +108,7 @@ mode = st.radio("Choose Prediction Mode:", [
 # ------------------------ ENERGY MODE ------------------------
 if mode == "🔬 Use Docking Energy Values":
     st.markdown("### 🔍 Select Protein and Enter Ligand")
-    protein_input = st.selectbox("Choose a Protein", ["STAT1", "ACE", "MMP3", "TNF", "TLR4", "CYP27B1"])
+    protein_input = st.selectbox("Choose a Protein", ["STAT", "ACE", "MMP3", "TNF", "TLR4", "CYP27B1"])
     ligand_input = st.text_input("Enter Ligand Name:")
 
     if st.button("🔬 Predict Binding Affinity (from Dataset)"):
@@ -106,7 +118,7 @@ if mode == "🔬 Use Docking Energy Values":
             combined_input = f"{protein_input}-{ligand_input}"
 
             st.write(f"🔍 Looking for pair: `{combined_input}`")
-            matching_row = df[df['PROTEIN-LIGAND'] == combined_input]
+            matching_row = df[df['PL_COMBO'] == combined_input]
 
             if not matching_row.empty:
                 features = matching_row[['Electrostatic energy', 'Torsional energy', 'vdw hb desolve energy', 'Intermol energy']].fillna(0)
@@ -115,7 +127,7 @@ if mode == "🔬 Use Docking Energy Values":
                 st.markdown(f"<div class='prediction-highlight'>📉 Predicted Binding Affinity: <b>{prediction:.2f} kcal/mol</b></div>", unsafe_allow_html=True)
             else:
                 st.error("❌ No exact match found.")
-                potential_matches = get_close_matches(combined_input, df['PROTEIN-LIGAND'].tolist(), n=3, cutoff=0.6)
+                potential_matches = get_close_matches(combined_input, df['PL_COMBO'].tolist(), n=3, cutoff=0.6)
                 if potential_matches:
                     st.markdown("### 💡 Did you mean:")
                     for match in potential_matches:
@@ -150,7 +162,7 @@ elif mode == "🧬 Combined Input (Descriptors + Energy Values)":
         all_features = pd.DataFrame([[d1, d2, d3, e1, e2, e3, e4]], columns=[
             'Descriptor1', 'Descriptor2', 'Descriptor3',
             'Electrostatic energy', 'Torsional energy', 'vdw hb desolve energy', 'Intermol energy'])
-        prediction = energy_model.predict(all_features)[0]  # Assuming same model for now
+        prediction = energy_model.predict(all_features)[0]
         st.markdown(f"<div class='prediction-highlight'>🔗 Combined Prediction: <b>{prediction:.2f} kcal/mol</b></div>", unsafe_allow_html=True)
 
 # ------------------------ MANUAL MODE ------------------------

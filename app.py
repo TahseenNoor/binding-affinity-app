@@ -2,10 +2,7 @@ import streamlit as st
 import pandas as pd
 import joblib
 import base64
-import seaborn as sns
-import matplotlib.pyplot as plt
 from difflib import get_close_matches
-import plotly.express as px
 
 # ------------------------ PAGE CONFIG ------------------------
 st.set_page_config(
@@ -38,10 +35,10 @@ st.markdown(f"""
         border-radius: 15px;
         align-items: center;
     }}
-    h1 {{
+    h1.title-aff {{
         font-family: 'Garamond', serif;
+        font-size: 3rem !important;
         color: #2c2c2c;
-        font-size: 3rem;
     }}
     h2, h3, h4 {{
         color: #2c2c2c;
@@ -81,6 +78,10 @@ st.markdown(f"""
 # ------------------------ LOAD MODELS AND DATA ------------------------
 df = pd.read_csv("Cleaned_Autodock_Results.csv")
 df['PROTEIN-LIGAND'] = df['PROTEIN-LIGAND'].astype(str).str.strip().str.lower()
+
+# Normalize all STAT variants to just "stat"
+df['PROTEIN-LIGAND'] = df['PROTEIN-LIGAND'].str.replace(r'stat\d*', 'stat', regex=True)
+
 valid_proteins = ["stat", "ace", "mmp3", "tnf", "tlr4", "cyp27b1"]
 df = df[df['PROTEIN-LIGAND'].apply(lambda x: x.split('-')[0] in valid_proteins)]
 
@@ -88,30 +89,28 @@ energy_model = joblib.load("model_with_importance.pkl")
 descriptor_model = joblib.load("descriptor_model.pkl")
 
 # ------------------------ HEADER ------------------------
-st.markdown("# 🧬 AFFERAZE")
-st.markdown("Predict binding affinity using machine learning magic 🪄")
+st.markdown("<h1 class='title-aff'>🧬 AFFERAZE</h1>", unsafe_allow_html=True)
+st.markdown("Predict binding affinity using **energy values** or **molecular descriptors** 💊")
 st.markdown("---")
 
 # ------------------------ MODE SELECTOR ------------------------
 mode = st.radio("Choose Prediction Mode:", [
-    "🔮 Magic Mode (Auto-detect from Protein + Ligand)",
+    "🔬 Use Docking Energy Values",
     "🧪 Use Molecular Descriptors",
     "🧬 Combined Input (Descriptors + Energy Values)",
     "🛠️ Manual Input (Energy Only, Any Names)"
 ])
 
-# ------------------------ MAGIC MODE ------------------------
-if mode == "🔮 Magic Mode (Auto-detect from Protein + Ligand)":
-    st.markdown("### 🪄 Select Protein & Enter Ligand")
+# ------------------------ ENERGY MODE ------------------------
+if mode == "🔬 Use Docking Energy Values":
+    st.markdown("### 🔍 Select Protein and Enter Ligand")
     protein_input = st.selectbox("Choose a Protein", ["STAT", "ACE", "MMP3", "TNF", "TLR4", "CYP27B1"])
-    ligand_input = st.text_input("Enter Ligand Name from Dataset (e.g., fucoidan):")
+    ligand_input = st.text_input("Enter Ligand Name:")
 
-    if st.button("✨ Predict Magic Binding Affinity"):
+    if st.button("🔬 Predict Binding Affinity (from Dataset)"):
         if protein_input and ligand_input:
             protein_input = protein_input.strip().lower()
             ligand_input = ligand_input.strip().lower()
-            if protein_input.startswith("stat"):
-                protein_input = "stat"
             combined_input = f"{protein_input}-{ligand_input}"
 
             st.write(f"🔍 Looking for pair: `{combined_input}`")
@@ -120,20 +119,10 @@ if mode == "🔮 Magic Mode (Auto-detect from Protein + Ligand)":
             if not matching_row.empty:
                 features = matching_row[['Electrostatic energy', 'Torsional energy', 'vdw hb desolve energy', 'Intermol energy']].fillna(0)
                 prediction = energy_model.predict(features)[0]
-
-                st.markdown(f"### ✅ Best Matched Pair: `{combined_input}`")
+                st.markdown(f"### 🧬 Best Matched Pair: `{combined_input}`")
                 st.markdown(f"<div class='prediction-highlight'>📉 Predicted Binding Affinity: <b>{prediction:.2f} kcal/mol</b></div>", unsafe_allow_html=True)
-
-                st.markdown("---")
-                st.markdown("### 📊 Feature Table:")
-                st.dataframe(features.T.rename(columns={features.index[0]: 'Value'}))
-
-                st.markdown("### 🔥 Heatmap of Energy Features")
-                fig, ax = plt.subplots()
-                sns.heatmap(features.T, annot=True, cmap="coolwarm", ax=ax)
-                st.pyplot(fig)
             else:
-                st.error("❌ Couldn't find exact match in dataset.")
+                st.error("❌ No exact match found.")
                 potential_matches = get_close_matches(combined_input, df['PROTEIN-LIGAND'].tolist(), n=3, cutoff=0.6)
                 if potential_matches:
                     st.markdown("### 💡 Did you mean:")

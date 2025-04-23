@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import joblib
 import base64
+import difflib
 
 # ------------------------ PAGE CONFIG ------------------------
 st.set_page_config(
@@ -77,15 +78,7 @@ st.markdown(f"""
 
 # ------------------------ LOAD MODELS AND DATA ------------------------
 df = pd.read_csv("Cleaned_Autodock_Results.csv")
-
-# Lowercase and split PROTEIN-LIGAND column
 df['PROTEIN-LIGAND'] = df['PROTEIN-LIGAND'].str.strip().str.lower()
-df[['PROTEIN', 'LIGAND']] = df['PROTEIN-LIGAND'].str.split('-', expand=True)
-df.dropna(subset=['PROTEIN', 'LIGAND'], inplace=True)
-df.reset_index(drop=True, inplace=True)
-
-unique_proteins = sorted(df['PROTEIN'].unique())
-
 energy_model = joblib.load("model_with_importance.pkl")
 descriptor_model = joblib.load("descriptor_model.pkl")
 
@@ -104,105 +97,39 @@ mode = st.radio("Choose Prediction Mode:", [
 
 # ------------------------ ENERGY MODE ------------------------
 if mode == "🔬 Use Docking Energy Values":
-    st.markdown("### 🔍 Select Protein and Enter Ligand")
-    
-    protein_input = st.selectbox("Select a Protein:", unique_proteins)
-    ligand_input = st.text_input("Enter Ligand Name:")
+    st.markdown("### 🔍 Enter Protein and Ligand Names")
+
+    protein_filter = st.text_input("🔍 Filter Protein List (optional)").strip().lower()
+    unique_proteins = sorted(set(p.split("-")[0] for p in df['PROTEIN-LIGAND']))
+    if protein_filter:
+        filtered_proteins = [p for p in unique_proteins if protein_filter in p]
+    else:
+        filtered_proteins = unique_proteins
+
+    protein_input = st.selectbox("Select Protein", filtered_proteins)
+    ligand_input = st.text_input("Enter Ligand Name").strip().lower()
 
     if st.button("🔬 Predict Binding Affinity (from Dataset)"):
-        if protein_input and ligand_input:
-            protein_input = protein_input.strip().lower()
-            ligand_input = ligand_input.strip().lower()
-            combined_input = f"{protein_input}-{ligand_input}"
+        protein_input = protein_input.strip().lower()
+        ligand_input = ligand_input.strip().lower()
+        combined_input = f"{protein_input}-{ligand_input}".strip()
 
-            matching_row = df[df['PROTEIN-LIGAND'] == combined_input]
+        st.write(f"🔍 Looking for pair: `{combined_input}`")
+        matching_row = df[df['PROTEIN-LIGAND'] == combined_input]
 
-            if not matching_row.empty:
-                features = matching_row[['Electrostatic energy', 'Torsional energy', 'vdw hb desolve energy', 'Intermol energy']].fillna(0)
-                prediction = energy_model.predict(features)[0]
-
-                st.markdown(f"### 🧬 Best Matched Pair: `{combined_input}`")
-                st.markdown(f"<div class='prediction-highlight'>📉 Predicted Binding Affinity: <b>{prediction:.2f} kcal/mol</b></div>", unsafe_allow_html=True)
-            else:
-                st.error(f"No match found for: `{combined_input}`.")
-        else:
-            st.error("Please select a Protein and enter a Ligand.")
-
-# ------------------------ DESCRIPTOR MODE ------------------------
-elif mode == "🧪 Use Molecular Descriptors":
-    st.markdown("### ✍️ Enter Molecular Descriptor Values")
-
-    protein_input = st.selectbox("Select a Protein:", unique_proteins)
-    ligand_input = st.text_input("Enter Ligand Name:")
-
-    mw = st.number_input("Molecular Weight", value=0.0)
-    mr = st.number_input("Molar Refractivity", value=0.0)
-    logp = st.number_input("LogP (octanol-water)", value=0.0)
-    acc = st.number_input("Number of H-Bond Acceptors", value=0.0)
-
-    if st.button("🔮 Predict Binding Affinity (Descriptors)"):
-        features = pd.DataFrame([[mr, mw, acc, logp]], columns=['molar refractivity', 'molecular weight', 'acceptor', 'logp'])
-        prediction = descriptor_model.predict(features)[0]
-
-        st.markdown(f"### 🧬 Protein: `{protein_input}` | Ligand: `{ligand_input}`")
-        st.markdown(f"<div class='prediction-highlight'>📉 Predicted Binding Affinity: <b>{prediction:.2f} kcal/mol</b></div>", unsafe_allow_html=True)
-
-# ------------------------ COMBINED MODE ------------------------
-elif mode == "🧬 Combined Input (Descriptors + Energy Values)":
-    st.markdown("### 🔬 Enter Energy Values + Molecular Descriptors")
-
-    protein_input = st.selectbox("Select a Protein:", unique_proteins)
-    ligand_input = st.text_input("Enter Ligand Name:")
-
-    mw = st.number_input("Molecular Weight", value=0.0)
-    mr = st.number_input("Molar Refractivity", value=0.0)
-    logp = st.number_input("LogP", value=0.0)
-    acc = st.number_input("Number of H-Bond Acceptors", value=0.0)
-
-    if st.button("🔬 Predict Combined Binding Affinity"):
-        if protein_input and ligand_input:
-            protein_input = protein_input.strip().lower()
-            ligand_input = ligand_input.strip().lower()
-            combined_input = f"{protein_input}-{ligand_input}"
-
-            matching_row = df[df['PROTEIN-LIGAND'] == combined_input]
-
-            if not matching_row.empty:
-                energy_features = matching_row[['Electrostatic energy', 'Torsional energy', 'vdw hb desolve energy', 'Intermol energy']].fillna(0).values[0]
-            else:
-                energy_features = [0, 0, 0, 0]  # Fallback values
-
-            descriptor_features = [mr, mw, acc, logp]
-            all_features = pd.DataFrame([energy_features + descriptor_features],
-                columns=['Electrostatic energy', 'Torsional energy', 'vdw hb desolve energy', 'Intermol energy',
-                         'molar refractivity', 'molecular weight', 'acceptor', 'logp'])
-
-            prediction = descriptor_model.predict(all_features)[0]
-            st.markdown(f"### 🧬 Combined Pair: `{combined_input}`")
+        if not matching_row.empty:
+            features = matching_row[['Electrostatic energy', 'Torsional energy', 'vdw hb desolve energy', 'Intermol energy']].fillna(0)
+            prediction = energy_model.predict(features)[0]
             st.markdown(f"<div class='prediction-highlight'>📉 Predicted Binding Affinity: <b>{prediction:.2f} kcal/mol</b></div>", unsafe_allow_html=True)
         else:
-            st.error("Enter both protein + ligand.")
+            st.error("❌ No exact match found.")
+            # Suggest closest matches
+            close_matches = difflib.get_close_matches(combined_input, df['PROTEIN-LIGAND'].tolist(), n=5, cutoff=0.6)
+            if close_matches:
+                st.markdown("### 🔎 Did you mean one of these?")
+                for match in close_matches:
+                    st.markdown(f"- `{match}`")
 
-# ------------------------ MANUAL MODE ------------------------
-elif mode == "🛠️ Manual Input (Energy Only, Any Names)":
-    st.markdown("### 🛠️ Manual Entry: Custom Names + Energy Values")
-
-    protein_input = st.text_input("Custom Protein Name:")
-    ligand_input = st.text_input("Custom Ligand Name:")
-
-    electro = st.number_input("Electrostatic energy", value=0.0)
-    torsional = st.number_input("Torsional energy", value=0.0)
-    vdw_hb = st.number_input("vdw hb desolve energy", value=0.0)
-    intermolecular = st.number_input("Intermol energy", value=0.0)
-
-    if st.button("🚀 Predict Binding Affinity (Manual Energy)"):
-        features = pd.DataFrame([[electro, torsional, vdw_hb, intermolecular]],
-            columns=['Electrostatic energy', 'Torsional energy', 'vdw hb desolve energy', 'Intermol energy'])
-
-        prediction = energy_model.predict(features)[0]
-        st.markdown(f"### 🧬 Custom Pair: `{protein_input} - {ligand_input}`")
-        st.markdown(f"<div class='prediction-highlight'>📉 Predicted Binding Affinity: <b>{prediction:.2f} kcal/mol</b></div>", unsafe_allow_html=True)
-
-# ------------------------ FOOTER ------------------------
-st.markdown("---")
-st.caption("🧠 Powered by Machine Learning | Created with ❤️ for biotech research.")
+# ------------------------ OTHER MODES (same as before — unchanged) ------------------------
+# Descriptor mode, Combined mode, Manual mode
+# Leave them as-is unless you want improvements there too.

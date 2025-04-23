@@ -1,5 +1,11 @@
 import streamlit as st
-import pandaage_config(
+import pandas as pd
+import joblib
+import base64
+from difflib import get_close_matches
+
+# ------------------------ PAGE CONFIG ------------------------
+st.set_page_config(
     page_title="AFFERAZE",
     layout="wide",
     page_icon="🧬"
@@ -158,10 +164,4 @@ elif mode == "🛠️ Manual Input (Energy Only, Any Names)":
     if st.button("⚙️ Predict Binding Affinity"):
         features = pd.DataFrame([[e1, e2, e3, e4]], columns=['Electrostatic energy', 'Torsional energy', 'vdw hb desolve energy', 'Intermol energy'])
         prediction = energy_model.predict(features)[0]
-        st.markdown(f"<div class='prediction-highlight'>🛠️ Manual Prediction: <b>{prediction:.2f} kcal/mol</b></div>", unsafe_allow_html=True)s as pd
-import joblib
-import base64
-from difflib import get_close_matches
-
-# ------------------------ PAGE CONFIG ------------------------
-st.set_p
+        st.markdown(f"<div class='prediction-highlight'>🛠️ Manual Prediction: <b>{prediction:.2f} kcal/mol</b></div>", unsafe_allow_html=True)

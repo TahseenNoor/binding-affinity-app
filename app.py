@@ -22,7 +22,7 @@ img_base64 = get_base64("image.png")
 st.markdown(f"""
     <style>
     html, body, [data-testid="stAppViewContainer"] {{
-        font-family: 'Palatino Linotype', serif;
+        font-family: 'Garamond', serif;
         background-image: url("data:image/png;base64,{img_base64}");
         background-size: cover;
         background-attachment: fixed;

@@ -1,11 +1,5 @@
 import streamlit as st
-import pandas as pd
-import joblib
-import base64
-from difflib import get_close_matches
-
-# ------------------------ PAGE CONFIG ------------------------
-st.set_page_config(
+import pandaage_config(
     page_title="AFFERAZE",
     layout="wide",
     page_icon="🧬"
@@ -74,7 +68,6 @@ st.markdown(f"""
 df = pd.read_csv("Cleaned_Autodock_Results.csv")
 df['PROTEIN-LIGAND'] = df['PROTEIN-LIGAND'].astype(str).str.strip().str.lower()
 
-# Filter dataset to only include valid proteins
 valid_proteins = ["stat1", "ace", "mmp3", "tnf", "tlr4", "cyp27b1"]
 df = df[df['PROTEIN-LIGAND'].apply(lambda x: x.split('-')[0] in valid_proteins)]
 
@@ -97,7 +90,6 @@ mode = st.radio("Choose Prediction Mode:", [
 # ------------------------ ENERGY MODE ------------------------
 if mode == "🔬 Use Docking Energy Values":
     st.markdown("### 🔍 Select Protein and Enter Ligand")
-
     protein_input = st.selectbox("Choose a Protein", ["STAT1", "ACE", "MMP3", "TNF", "TLR4", "CYP27B1"])
     ligand_input = st.text_input("Enter Ligand Name:")
 
@@ -125,4 +117,51 @@ if mode == "🔬 Use Docking Energy Values":
         else:
             st.error("Please enter both a Protein and Ligand name.")
 
-# (Other modes remain unchanged for now — Combined Mode update coming next!)
+# ------------------------ DESCRIPTOR MODE ------------------------
+elif mode == "🧪 Use Molecular Descriptors":
+    st.markdown("### 🧪 Enter Descriptor Values")
+    d1 = st.number_input("Descriptor 1 (e.g., MolWt)")
+    d2 = st.number_input("Descriptor 2 (e.g., LogP)")
+    d3 = st.number_input("Descriptor 3 (e.g., TPSA)")
+
+    if st.button("🧪 Predict via Descriptors"):
+        features = pd.DataFrame([[d1, d2, d3]], columns=['Descriptor1', 'Descriptor2', 'Descriptor3'])
+        prediction = descriptor_model.predict(features)[0]
+        st.markdown(f"<div class='prediction-highlight'>🧪 Predicted Binding Affinity: <b>{prediction:.2f} kcal/mol</b></div>", unsafe_allow_html=True)
+
+# ------------------------ COMBINED MODE ------------------------
+elif mode == "🧬 Combined Input (Descriptors + Energy Values)":
+    st.markdown("### 🧬 Enter Descriptors + Energy Values")
+    d1 = st.number_input("Descriptor 1")
+    d2 = st.number_input("Descriptor 2")
+    d3 = st.number_input("Descriptor 3")
+    e1 = st.number_input("Electrostatic Energy")
+    e2 = st.number_input("Torsional Energy")
+    e3 = st.number_input("vdw hb desolve Energy")
+    e4 = st.number_input("Intermol Energy")
+
+    if st.button("🧬 Predict via Combined Model"):
+        all_features = pd.DataFrame([[d1, d2, d3, e1, e2, e3, e4]], columns=[
+            'Descriptor1', 'Descriptor2', 'Descriptor3',
+            'Electrostatic energy', 'Torsional energy', 'vdw hb desolve energy', 'Intermol energy'])
+        prediction = energy_model.predict(all_features)[0]  # Assuming same model for now
+        st.markdown(f"<div class='prediction-highlight'>🔗 Combined Prediction: <b>{prediction:.2f} kcal/mol</b></div>", unsafe_allow_html=True)
+
+# ------------------------ MANUAL MODE ------------------------
+elif mode == "🛠️ Manual Input (Energy Only, Any Names)":
+    st.markdown("### 🛠️ Enter Energy Values for Any Protein-Ligand")
+    e1 = st.number_input("Electrostatic Energy")
+    e2 = st.number_input("Torsional Energy")
+    e3 = st.number_input("vdw hb desolve Energy")
+    e4 = st.number_input("Intermol Energy")
+
+    if st.button("⚙️ Predict Binding Affinity"):
+        features = pd.DataFrame([[e1, e2, e3, e4]], columns=['Electrostatic energy', 'Torsional energy', 'vdw hb desolve energy', 'Intermol energy'])
+        prediction = energy_model.predict(features)[0]
+        st.markdown(f"<div class='prediction-highlight'>🛠️ Manual Prediction: <b>{prediction:.2f} kcal/mol</b></div>", unsafe_allow_html=True)s as pd
+import joblib
+import base64
+from difflib import get_close_matches
+
+# ------------------------ PAGE CONFIG ------------------------
+st.set_p

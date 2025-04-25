@@ -1,105 +1,175 @@
-# app.py
-
 import streamlit as st
 import pandas as pd
-import numpy as np
 import joblib
+import base64
 
-# Load models
-energy_model = joblib.load('model.pkl')  # this is your docking energy model
-descriptor_model = joblib.load('descriptor_model.pkl')  # descriptor model
-combined_model = joblib.load('model_with_importance.pkl')  # combined model
-
-# Load data
-energy_data = pd.read_csv('Cleaned_Autodock_Results.csv')
-descriptor_data = pd.read_csv('descriptors final.csv')
-
-# Streamlit App
-st.set_page_config(page_title="Afferaze Binding Predictor", page_icon="🧪", layout="centered")
-
-# Custom Title
-st.markdown(
-    """
-    <h1 style='text-align: center; font-family: Garamond; font-size: 60px; color: #3C486B;'>AFFERAZE</h1>
-    <p style='text-align: center; font-family: Garamond; font-size: 20px;'>Predict binding affinity using <b>energy values</b> or <b>molecular descriptors</b> 🎯</p>
-    """,
-    unsafe_allow_html=True
+# ------------------------ PAGE CONFIG ------------------------
+st.set_page_config(
+    page_title="Binding Affinity Predictor",
+    layout="wide",
+    page_icon="🧬"
 )
 
+# ------------------------ LOAD BACKGROUND IMAGE & CONVERT TO BASE64 ------------------------
+def get_base64(file_path):
+    with open(file_path, "rb") as f:
+        data = f.read()
+    return base64.b64encode(data).decode()
+
+img_base64 = get_base64("image.png")
+
+# ------------------------ CUSTOM CSS WITH EMBEDDED IMAGE ------------------------
+st.markdown(f"""
+<style>
+html, body, [data-testid="stAppViewContainer"] {{
+    font-family: 'Palatino Linotype', serif;
+    background-image: url("data:image/png;base64,{img_base64}");
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    background-position: center;
+    color: black !important;
+}}
+
+[data-testid="stAppViewContainer"] {{
+    background-color: rgba(255, 255, 255, 0.85);
+    padding: 2rem;
+    border-radius: 15px;
+}}
+
+h1, h2, h3, h4 {{
+    color: #2c2c2c;
+    font-family: 'Palatino Linotype', serif;
+}}
+
+.stButton>button {{
+    background-color: #6a5acd;
+    color: white;
+    font-weight: bold;
+    border-radius: 10px;
+    padding: 0.6em 1.5em;
+    border: none;
+}}
+.stButton>button:hover {{
+    background-color: #836fff;
+    transform: scale(1.02);
+}}
+
+.suggestion-card {{
+    background-color: #f8f8ff;
+    padding: 1rem;
+    border-left: 4px solid #6a5acd;
+    border-radius: 10px;
+    margin-top: 20px;
+    color: black;
+    box-shadow: 0 0 10px rgba(0,0,0,0.08);
+}}
+
+[data-testid="stMetric"] {{
+    background-color: #fff !important;
+    border-radius: 12px;
+    padding: 10px;
+}}
+
+.prediction-highlight {{
+    background-color: #eee;
+    padding: 1rem;
+    border-left: 5px solid #6a5acd;
+    border-radius: 10px;
+    margin: 1rem 0;
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #2c2c2c;
+}}
+</style>
+""", unsafe_allow_html=True)
+
+# ------------------------ LOAD MODEL AND DATA ------------------------
+df = pd.read_csv("Cleaned_Autodock_Results.csv")
+model = joblib.load("model_with_importance.pkl")
+
+# Load ADMET data
+admet_df = pd.read_csv("pharmokinetics final.csv", encoding='ISO-8859-1')
+admet_df['Compound'] = admet_df['Compound'].astype(str).str.strip().str.upper()
+
+# Add ligand column for matching
+df['Ligand'] = df['PROTEIN-LIGAND'].apply(lambda x: x.split('-')[-1].strip().upper())
+
+# ------------------------ HEADER ------------------------
+st.markdown("# 🧬 Binding Affinity Predictor")
+st.markdown("This AI-powered tool predicts binding affinity between a target protein and a compound. Optimized for drug discovery research and enhanced with biotech visual aesthetics.")
 st.markdown("---")
 
-# Choose mode
-mode = st.radio("Choose Prediction Mode:", 
-                ("🧪 Use Docking Energy Values", 
-                 "🌿 Use Molecular Descriptors", 
-                 "🚀 Combined Input (Descriptors + Energy Values)", 
-                 "🛠️ Manual Input (Energy Only, Any Names)", 
-                 "🔮 Magic Mode (Any Known Ligand)")
-)
+# ------------------------ LAYOUT ------------------------
+col1, col2 = st.columns([1, 2])
 
-st.markdown("### 🔍 Select Protein and Enter Ligand")
+with col1:
+    st.image("https://cdn-icons-png.flaticon.com/512/3004/3004496.png", width=80)
+    selected_pair = st.selectbox("Choose a Protein-Ligand Pair", df['PROTEIN-LIGAND'].unique())
+    ligand_name = selected_pair.split('-')[-1].strip().upper()
 
-protein_choice = st.text_input("Choose a Protein", "TNF")
-ligand_choice = st.text_input("Enter Ligand Name", "ZONOROL")
+    st.markdown("### 🧪 ADMET Profile Lookup (Auto)")
+    matches = admet_df[admet_df['Compound'].str.contains(ligand_name[:5], na=False)]
+    if not matches.empty:
+        st.dataframe(matches.head())
+    else:
+        st.info("No matching ADMET data found.")
 
-if st.button("🎯 Predict Binding Affinity (from Dataset)"):
-    try:
-        if mode == "🧪 Use Docking Energy Values":
-            match = energy_data[(energy_data['Protein'] == protein_choice) & (energy_data['Ligand'] == ligand_choice)]
-            if not match.empty:
-                X = match[['Binding Energy (kcal/mol)', 'Inhibition Constant (Ki) (nM)']]
-                pred = energy_model.predict(X)
-                st.success(f"Predicted Binding Affinity: {pred[0]:.2f}")
-            else:
-                st.error("Ligand not found in Energy Dataset.")
+    st.markdown("#### 🔍 Debug Info")
+    st.write(f"Looking for ADMET data with compound name: {ligand_name}")
+    st.write("Top 5 matching candidates from ADMET dataset above.")
 
-        elif mode == "🌿 Use Molecular Descriptors":
-            match = descriptor_data[(descriptor_data['Protein'] == protein_choice) & (descriptor_data['Ligand'] == ligand_choice)]
-            if not match.empty:
-                X = match.drop(columns=['Protein', 'Ligand'])
-                pred = descriptor_model.predict(X)
-                st.success(f"Predicted Binding Affinity: {pred[0]:.2f}")
-            else:
-                st.error("Ligand not found in Descriptor Dataset.")
+    if st.button("🔬 Predict Binding Affinity"):
+        try:
+            row = df[df['PROTEIN-LIGAND'] == selected_pair]
+            features = row[[
+                'Electrostatic energy',
+                'Torsional energy',
+                'vdw hb desolve energy',
+                'Intermol energy'
+            ]].fillna(0)
 
-        elif mode == "🚀 Combined Input (Descriptors + Energy Values)":
-            energy_match = energy_data[(energy_data['Protein'] == protein_choice) & (energy_data['Ligand'] == ligand_choice)]
-            descriptor_match = descriptor_data[(descriptor_data['Protein'] == protein_choice) & (descriptor_data['Ligand'] == ligand_choice)]
-            if not energy_match.empty and not descriptor_match.empty:
-                energy_X = energy_match[['Binding Energy (kcal/mol)', 'Inhibition Constant (Ki) (nM)']]
-                descriptor_X = descriptor_match.drop(columns=['Protein', 'Ligand'])
-                combined_X = pd.concat([energy_X.reset_index(drop=True), descriptor_X.reset_index(drop=True)], axis=1)
-                pred = combined_model.predict(combined_X)
-                st.success(f"Predicted Binding Affinity: {pred[0]:.2f}")
-            else:
-                st.error("Ligand not found in both datasets.")
+            prediction = model.predict(features)[0]
+            st.markdown("### ✅ Prediction Result")
+            st.markdown(
+                f"<div class='prediction-highlight'>🧬 Predicted Binding Affinity: <b>{prediction:.2f} kcal/mol</b></div>",
+                unsafe_allow_html=True
+            )
 
-        elif mode == "🛠️ Manual Input (Energy Only, Any Names)":
-            be = st.number_input("Enter Binding Energy (kcal/mol)", value=-7.0)
-            ki = st.number_input("Enter Inhibition Constant (Ki) (nM)", value=200.0)
-            manual_input = np.array([[be, ki]])
-            pred = energy_model.predict(manual_input)
-            st.success(f"Predicted Binding Affinity: {pred[0]:.2f}")
+            # Show full ADMET if available
+            ligand_admet = admet_df[admet_df['Compound'] == ligand_name]
+            if not ligand_admet.empty:
+                st.markdown("### 🧪 Full ADMET Profile")
+                st.dataframe(ligand_admet.drop(columns=["Compound"]), use_container_width=True)
 
-        elif mode == "🔮 Magic Mode (Any Known Ligand)":
-            # Magic mode: First try Energy dataset, if not found try Descriptors
-            match = energy_data[(energy_data['Ligand'] == ligand_choice)]
-            if not match.empty:
-                X = match[['Binding Energy (kcal/mol)', 'Inhibition Constant (Ki) (nM)']]
-                pred = energy_model.predict(X)
-                st.success(f"Predicted Binding Affinity (from Energy): {pred[0]:.2f}")
-            else:
-                match = descriptor_data[(descriptor_data['Ligand'] == ligand_choice)]
-                if not match.empty:
-                    X = match.drop(columns=['Protein', 'Ligand'])
-                    pred = descriptor_model.predict(X)
-                    st.success(f"Predicted Binding Affinity (from Descriptors): {pred[0]:.2f}")
-                else:
-                    st.error("Ligand not found anywhere 😢.")
+            # Feature importance
+            importances = model.feature_importances_
+            feature_names = features.columns
+            feature_impact = dict(zip(feature_names, importances))
 
-    except Exception as e:
-        st.error(f"Something went wrong: {str(e)}")
+            st.markdown("<div class='suggestion-card'><h4>🧠 AI Suggestion:</h4>", unsafe_allow_html=True)
+            sorted_feats = sorted(feature_impact.items(), key=lambda x: x[1], reverse=True)
+            for feat, score in sorted_feats:
+                st.markdown(f"<p>- <b>{feat}</b> is highly influential. Try minimizing it to improve binding.</p>", unsafe_allow_html=True)
+            st.markdown("</div>", unsafe_allow_html=True)
 
-# Footer
-st.markdown("---")
-st.caption("Made with ❤️ by Afferaze Team")
+        except Exception as e:
+            st.error(f"Something went wrong: {e}")
+
+with col2:
+    st.markdown("### Description")
+    st.write("This tool predicts binding affinity between a target and compound using ML models. "
+             "Designed for drug discovery researchers. Styled with biotech vibes.")
+    
+    st.markdown("---")
+    st.markdown("""
+    Predicting the binding affinity between genes and compounds is crucial 🧬 for drug discovery and precision medicine,
+    as it helps identify which compounds may effectively target specific genes 🧪. Typically, a threshold binding affinity
+    value—often expressed as a dissociation constant (Kd) or binding free energy (ΔG)—is used to evaluate the strength of
+    interaction 💥. A high affinity (e.g., Kd < 1μM) indicates strong binding and potential therapeutic value 💊,
+    while a low affinity (e.g., Kd > 10μM) may suggest weak or non-specific interactions 🚫. If the predicted affinity is above the threshold
+    (weaker binding), the compound may need optimization through structural modification or may be discarded from further testing 🔧.
+    Conversely, if the affinity is below the threshold (stronger binding), the compound can be prioritized for in vitro or in vivo validation 🧪.
+    This predictive step accelerates the drug development process ⏩ and reduces the cost of experimental screening 📉, making it a key tool
+    in computational biology and cheminformatics 🖥️.
+    """)

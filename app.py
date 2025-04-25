@@ -89,14 +89,23 @@ st.markdown("---")
 # ------------------------ ADMET ANALYSIS SECTION ------------------------
 with st.expander("📊 ADMET Analysis (Absorption, Distribution, Metabolism, Excretion, Toxicity)", expanded=True):
     try:
-        admet_df = pd.read_csv("admet.csv")  # Make sure this file exists
-        st.markdown("#### Druglikeness and Pharmacokinetic Properties")
+        descriptor_url = "https://github.com/TahseenNoor/binding-affinity-app/raw/refs/heads/main/descriptors%20final.csv"
+        pharma_url = "https://github.com/TahseenNoor/binding-affinity-app/raw/refs/heads/main/pharmacokinetics%20and%20toxicity.csv"
+
+        descriptors_df = pd.read_csv(descriptor_url)
+        pharma_df = pd.read_csv(pharma_url)
+
+        # Try to merge on a common identifier (like Ligand or Molecule name)
+        common_column = "Name"  # change if your identifier column has a different name
+        admet_df = pd.merge(descriptors_df, pharma_df, on=common_column, how="outer")
+
+        st.markdown("#### Druglikeness, Pharmacokinetics & Toxicity Summary")
         st.dataframe(admet_df, use_container_width=True)
+
     except Exception as e:
-        st.error("ADMET data could not be loaded. Please check 'admet.csv' file.")
+        st.error("❌ Could not load ADMET data from GitHub.")
         st.exception(e)
 
-st.markdown("---")
 
 # ------------------------ MODE SELECTOR ------------------------
 mode = st.radio("Choose Prediction Mode:", [

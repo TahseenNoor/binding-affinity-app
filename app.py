@@ -33,7 +33,6 @@ st.markdown(f"""
         background-color: rgba(255, 255, 255, 0.88);
         padding: 2rem;
         border-radius: 15px;
-        align-items: center;
     }}
     h1, h2, h3, h4 {{
         color: #2c2c2c;
@@ -83,8 +82,20 @@ energy_model = joblib.load("model_with_importance.pkl")
 descriptor_model = joblib.load("descriptor_model.pkl")
 
 # ------------------------ HEADER ------------------------
-st.markdown("<h1 style='text-align: center;'>🧬 AFFERAZE</h1>", unsafe_allow_html=True)
-st.markdown("<h3 style='text-align: center;'>Predict binding affinity using <b>energy values</b> or <b>molecular descriptors</b> 💊</h3>", unsafe_allow_html=True)
+st.title("🧬 AFFERAZE")
+st.markdown("### Predict binding affinity using **energy values** or **molecular descriptors** 💊")
+st.markdown("---")
+
+# ------------------------ ADMET ANALYSIS SECTION ------------------------
+with st.expander("📊 ADMET Analysis (Absorption, Distribution, Metabolism, Excretion, Toxicity)", expanded=True):
+    try:
+        admet_df = pd.read_csv("admet.csv")  # Make sure this file exists
+        st.markdown("#### Druglikeness and Pharmacokinetic Properties")
+        st.dataframe(admet_df, use_container_width=True)
+    except Exception as e:
+        st.error("ADMET data could not be loaded. Please check 'admet.csv' file.")
+        st.exception(e)
+
 st.markdown("---")
 
 # ------------------------ MODE SELECTOR ------------------------
@@ -108,13 +119,13 @@ if mode == "🔬 Use Docking Energy Values":
             ligand_input = ligand_input.strip().lower()
             combined_input = f"{protein_input}-{ligand_input}"
 
-            st.write(f"🔍 Looking for pair: {combined_input}")
+            st.write(f"🔍 Looking for pair: `{combined_input}`")
             matching_row = df[df['PROTEIN-LIGAND'] == combined_input]
 
             if not matching_row.empty:
                 features = matching_row[['Electrostatic energy', 'Torsional energy', 'vdw hb desolve energy', 'Intermol energy']].fillna(0)
                 prediction = energy_model.predict(features)[0]
-                st.markdown(f"### 🧬 Best Matched Pair: {combined_input}")
+                st.markdown(f"### 🧬 Best Matched Pair: `{combined_input}`")
                 st.markdown(f"<div class='prediction-highlight'>📉 Predicted Binding Affinity: <b>{prediction:.2f} kcal/mol</b></div>", unsafe_allow_html=True)
             else:
                 st.error("❌ No exact match found.")

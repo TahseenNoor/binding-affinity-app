@@ -96,7 +96,7 @@ admet_df['Compound'] = admet_df['Compound'].astype(str).str.strip().str.upper()
 df['Ligand'] = df['PROTEIN-LIGAND'].apply(lambda x: x.split('-')[-1].strip().upper())
 
 # ------------------------ HEADER ------------------------
-st.markdown("# 🧬 AFFERAZE")
+st.markdown("  🧬 AFFERAZE")
 st.markdown("This AI-powered tool predicts binding affinity between a target protein and a compound. Optimized for drug discovery research and enhanced with biotech visual aesthetics.")
 st.markdown("---")
 

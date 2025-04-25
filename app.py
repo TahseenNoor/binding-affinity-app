@@ -240,3 +240,12 @@ elif mode == "🪄 Magic Mode (Any Known Ligand)":
 
             else:
                 st.error("🫥 Couldn't find any match for that ligand either.")
+                # -------------------- UNIVERSAL ADMET DISPLAY --------------------
+            if pharma_df is not None and ligand_input:
+                admet_match = pharma_df[pharma_df['Name'].str.lower() == ligand_input.lower()]
+                if not admet_match.empty:
+                    st.markdown("### 🧪 ADMET Profile")
+                    st.dataframe(admet_match)
+                else:
+                    st.info("ℹ️ No ADMET profile found for this ligand.")
+

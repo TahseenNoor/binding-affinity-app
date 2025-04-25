@@ -21,21 +21,19 @@ img_base64 = get_base64("image.png")
 # ------------------------ CUSTOM CSS ------------------------
 st.markdown(f"""
     <style>
-    html, body, [data-testid="stAppViewContainer"] {{
+    html, body {{
         font-family: 'Garamond', serif;
         background-image: url("data:image/png;base64,{img_base64}");
         background-size: cover;
         background-attachment: fixed;
-        height: 100vh;
-        overflow-y: scroll;
+        background-position: center;
     }}
     [data-testid="stAppViewContainer"] {{
         background-color: rgba(255, 255, 255, 0.88);
         padding: 2rem;
         border-radius: 15px;
-        align-items: center;
     }}
-    h1, h2, h3, h4 {{
+    h1, h2, h3 {{
         color: #2c2c2c;
     }}
     .prediction-highlight {{
@@ -81,10 +79,11 @@ df = df[df['PROTEIN'].isin(valid_proteins)]
 
 energy_model = joblib.load("model_with_importance.pkl")
 descriptor_model = joblib.load("descriptor_model.pkl")
+combined_model = joblib.load("combined_model.pkl")  # Ensure this exists
 
 # ------------------------ HEADER ------------------------
-st.markdown("# 🧬 AFFERAZE")
-st.markdown("Predict binding affinity using **energy values** or **molecular descriptors** 💊")
+st.markdown("<h1 style='text-align: center;'>🧬 AFFERAZE</h1>", unsafe_allow_html=True)
+st.markdown("<h3 style='text-align: center;'>Predict Binding Affinity using AI Models (Energy + Descriptors)</h3>", unsafe_allow_html=True)
 st.markdown("---")
 
 # ------------------------ MODE SELECTOR ------------------------
@@ -104,27 +103,22 @@ if mode == "🔬 Use Docking Energy Values":
 
     if st.button("🔬 Predict Binding Affinity (from Dataset)"):
         if protein_input and ligand_input:
-            protein_input = protein_input.strip().lower()
-            ligand_input = ligand_input.strip().lower()
-            combined_input = f"{protein_input}-{ligand_input}"
+            key = f"{protein_input.strip().lower()}-{ligand_input.strip().lower()}"
+            row = df[df['PROTEIN-LIGAND'] == key]
 
-            st.write(f"🔍 Looking for pair: `{combined_input}`")
-            matching_row = df[df['PROTEIN-LIGAND'] == combined_input]
-
-            if not matching_row.empty:
-                features = matching_row[['Electrostatic energy', 'Torsional energy', 'vdw hb desolve energy', 'Intermol energy']].fillna(0)
-                prediction = energy_model.predict(features)[0]
-                st.markdown(f"### 🧬 Best Matched Pair: `{combined_input}`")
-                st.markdown(f"<div class='prediction-highlight'>📉 Predicted Binding Affinity: <b>{prediction:.2f} kcal/mol</b></div>", unsafe_allow_html=True)
+            if not row.empty:
+                features = row[['Electrostatic energy', 'Torsional energy', 'vdw hb desolve energy', 'Intermol energy']].fillna(0)
+                pred = energy_model.predict(features)[0]
+                st.markdown(f"<div class='prediction-highlight'>📉 Predicted Binding Affinity: <b>{pred:.2f} kcal/mol</b></div>", unsafe_allow_html=True)
             else:
-                st.error("❌ No exact match found.")
-                potential_matches = get_close_matches(combined_input, df['PROTEIN-LIGAND'].tolist(), n=3, cutoff=0.6)
-                if potential_matches:
+                st.error("No exact match found.")
+                matches = get_close_matches(key, df['PROTEIN-LIGAND'].tolist(), n=3, cutoff=0.6)
+                if matches:
                     st.markdown("### 💡 Did you mean:")
-                    for match in potential_matches:
-                        st.markdown(f"- `{match}`")
+                    for m in matches:
+                        st.markdown(f"- `{m}`")
         else:
-            st.error("Please enter both a Protein and Ligand name.")
+            st.error("Please enter both Protein and Ligand.")
 
 # ------------------------ DESCRIPTOR MODE ------------------------
 elif mode == "🧪 Use Molecular Descriptors":
@@ -135,8 +129,8 @@ elif mode == "🧪 Use Molecular Descriptors":
 
     if st.button("🧪 Predict via Descriptors"):
         features = pd.DataFrame([[d1, d2, d3]], columns=['Descriptor1', 'Descriptor2', 'Descriptor3'])
-        prediction = descriptor_model.predict(features)[0]
-        st.markdown(f"<div class='prediction-highlight'>🧪 Predicted Binding Affinity: <b>{prediction:.2f} kcal/mol</b></div>", unsafe_allow_html=True)
+        pred = descriptor_model.predict(features)[0]
+        st.markdown(f"<div class='prediction-highlight'>🧪 Predicted Binding Affinity: <b>{pred:.2f} kcal/mol</b></div>", unsafe_allow_html=True)
 
 # ------------------------ COMBINED MODE ------------------------
 elif mode == "🧬 Combined Input (Descriptors + Energy Values)":
@@ -153,53 +147,48 @@ elif mode == "🧬 Combined Input (Descriptors + Energy Values)":
         all_features = pd.DataFrame([[d1, d2, d3, e1, e2, e3, e4]], columns=[
             'Descriptor1', 'Descriptor2', 'Descriptor3',
             'Electrostatic energy', 'Torsional energy', 'vdw hb desolve energy', 'Intermol energy'])
-        prediction = energy_model.predict(all_features)[0]  # Assuming same model for now
-        st.markdown(f"<div class='prediction-highlight'>🔗 Combined Prediction: <b>{prediction:.2f} kcal/mol</b></div>", unsafe_allow_html=True)
+        pred = combined_model.predict(all_features)[0]
+        st.markdown(f"<div class='prediction-highlight'>🔗 Combined Prediction: <b>{pred:.2f} kcal/mol</b></div>", unsafe_allow_html=True)
 
 # ------------------------ MANUAL MODE ------------------------
 elif mode == "🛠️ Manual Input (Energy Only, Any Names)":
-    st.markdown("### 🛠️ Enter Energy Values for Any Protein-Ligand")
+    st.markdown("### 🛠️ Enter Energy Values")
     e1 = st.number_input("Electrostatic Energy")
     e2 = st.number_input("Torsional Energy")
     e3 = st.number_input("vdw hb desolve Energy")
     e4 = st.number_input("Intermol Energy")
 
     if st.button("⚙️ Predict Binding Affinity"):
-        features = pd.DataFrame([[e1, e2, e3, e4]], columns=['Electrostatic energy', 'Torsional energy', 'vdw hb desolve energy', 'Intermol energy'])
-        prediction = energy_model.predict(features)[0]
-        st.markdown(f"<div class='prediction-highlight'>🛠️ Manual Prediction: <b>{prediction:.2f} kcal/mol</b></div>", unsafe_allow_html=True)
+        features = pd.DataFrame([[e1, e2, e3, e4]], columns=[
+            'Electrostatic energy', 'Torsional energy', 'vdw hb desolve energy', 'Intermol energy'])
+        pred = energy_model.predict(features)[0]
+        st.markdown(f"<div class='prediction-highlight'>🛠️ Manual Prediction: <b>{pred:.2f} kcal/mol</b></div>", unsafe_allow_html=True)
 
 # ------------------------ MAGIC MODE ------------------------
 elif mode == "🪄 Magic Mode (Any Known Ligand)":
-    st.markdown("### 🪄 Enter Any Ligand + Protein Name (flexible match)")
+    st.markdown("### 🪄 Enter Protein and Ligand Name")
     protein_input = st.selectbox("Choose a Protein", ["STAT", "ACE", "MMP3", "TNF", "TLR4", "CYP27B1"])
     ligand_input = st.text_input("Enter Ligand Name:")
 
     if st.button("🪄 Predict Anyway!"):
-        protein_input = protein_input.strip().lower()
-        ligand_input = ligand_input.strip().lower()
-        query_key = f"{protein_input}-{ligand_input}"
+        key = f"{protein_input.strip().lower()}-{ligand_input.strip().lower()}"
+        match = df[df['PROTEIN-LIGAND'] == key]
 
-        # Try exact match first
-        exact = df[df['PROTEIN-LIGAND'] == query_key]
-        if not exact.empty:
-            features = exact[['Electrostatic energy', 'Torsional energy', 'vdw hb desolve energy', 'Intermol energy']].fillna(0)
-            prediction = energy_model.predict(features)[0]
-            st.markdown(f"<div class='prediction-highlight'>✨ Magic Prediction (Exact): <b>{prediction:.2f} kcal/mol</b></div>", unsafe_allow_html=True)
+        if not match.empty:
+            features = match[['Electrostatic energy', 'Torsional energy', 'vdw hb desolve energy', 'Intermol energy']].fillna(0)
+            pred = energy_model.predict(features)[0]
+            st.markdown(f"<div class='prediction-highlight'>✨ Magic Prediction (Exact): <b>{pred:.2f} kcal/mol</b></div>", unsafe_allow_html=True)
         else:
-            # Try finding ligand match regardless of protein
-            st.warning("Exact match not found — searching by ligand only ⚡️")
-            ligand_match = df[df['LIGAND'] == ligand_input]
-
+            ligand_match = df[df['LIGAND'] == ligand_input.strip().lower()]
             if not ligand_match.empty:
                 row = ligand_match.iloc[0]
                 features = row[['Electrostatic energy', 'Torsional energy', 'vdw hb desolve energy', 'Intermol energy']].fillna(0).to_frame().T
-                prediction = energy_model.predict(features)[0]
+                pred = energy_model.predict(features)[0]
                 st.markdown(f"""
                     <div class='prediction-highlight'>
                         🔮 Used `{row['PROTEIN-LIGAND']}` instead<br>
-                        ✨ Magic Prediction (Closest): <b>{prediction:.2f} kcal/mol</b>
+                        ✨ Magic Prediction (Closest): <b>{pred:.2f} kcal/mol</b>
                     </div>
                 """, unsafe_allow_html=True)
             else:
-                st.error("🫥 Couldn't find any match for that ligand either.")
+                st.error("🫥 Couldn't find any match for that ligand.")

@@ -92,11 +92,11 @@ st.markdown("---")
 st.markdown("<h2 style='text-align: center;'>📊 ADMET Analysis (Absorption, Distribution, Metabolism, Excretion, Toxicity)</h2>", unsafe_allow_html=True)
 
 try:
-    # Load your local files
-    descriptors_df = pd.read_csv("descriptors final.csv")
-    pharma_df = pd.read_csv("pharmokinetics final.csv")
+    # Load your local files with proper encoding
+    descriptors_df = pd.read_csv("descriptors final.csv", encoding="latin1")
+    pharma_df = pd.read_csv("pharmokinetics final.csv", encoding="latin1")
     
-    # Merge them based on the 'Name' column (or whichever column matches)
+    # Merge based on 'Name' column
     admet_df = pd.merge(descriptors_df, pharma_df, on="Name", how="inner")
     
     # Display the ADMET table inside an expander

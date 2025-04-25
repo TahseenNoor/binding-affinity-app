@@ -5,7 +5,7 @@ import base64
 
 # ------------------------ PAGE CONFIG ------------------------
 st.set_page_config(
-    page_title="Binding Affinity Predictor",
+    page_title="AFFERAZE",
     layout="wide",
     page_icon="🧬"
 )
@@ -22,7 +22,7 @@ img_base64 = get_base64("image.png")
 st.markdown(f"""
 <style>
 html, body, [data-testid="stAppViewContainer"] {{
-    font-family: 'Palatino Linotype', serif;
+    font-family: 'Garamond', serif;
     background-image: url("data:image/png;base64,{img_base64}");
     background-size: cover;
     background-repeat: no-repeat;

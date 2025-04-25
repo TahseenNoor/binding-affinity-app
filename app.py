@@ -86,25 +86,26 @@ st.title("🧬 AFFERAZE")
 st.markdown("### Predict binding affinity using **energy values** or **molecular descriptors** 💊")
 st.markdown("---")
 
-# ------------------------ ADMET ANALYSIS SECTION ------------------------
-with st.expander("📊 ADMET Analysis (Absorption, Distribution, Metabolism, Excretion, Toxicity)", expanded=True):
-    try:
-        descriptor_url = "https://github.com/TahseenNoor/binding-affinity-app/raw/refs/heads/main/descriptors%20final.csv"
-        pharma_url = "https://github.com/TahseenNoor/binding-affinity-app/raw/refs/heads/main/pharmacokinetics%20and%20toxicity.csv"
+# ------------------------ ADMET Analysis Section ------------------------
 
-        descriptors_df = pd.read_csv(descriptor_url)
-        pharma_df = pd.read_csv(pharma_url)
+st.markdown("---")
+st.markdown("<h2 style='text-align: center;'>📊 ADMET Analysis (Absorption, Distribution, Metabolism, Excretion, Toxicity)</h2>", unsafe_allow_html=True)
 
-        # Try to merge on a common identifier (like Ligand or Molecule name)
-        common_column = "Name"  # change if your identifier column has a different name
-        admet_df = pd.merge(descriptors_df, pharma_df, on=common_column, how="outer")
-
-        st.markdown("#### Druglikeness, Pharmacokinetics & Toxicity Summary")
+try:
+    # Load your local files
+    descriptors_df = pd.read_csv("descriptors final.csv")
+    pharma_df = pd.read_csv("pharmokinetics final.csv")
+    
+    # Merge them based on the 'Name' column (or whichever column matches)
+    admet_df = pd.merge(descriptors_df, pharma_df, on="Name", how="inner")
+    
+    # Display the ADMET table inside an expander
+    with st.expander("🔍 View ADMET Data Table"):
         st.dataframe(admet_df, use_container_width=True)
+        
+except Exception as e:
+    st.error(f"❌ Could not load ADMET data. Error: {e}")
 
-    except Exception as e:
-        st.error("❌ Could not load ADMET data from GitHub.")
-        st.exception(e)
 
 
 # ------------------------ MODE SELECTOR ------------------------

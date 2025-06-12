@@ -2,99 +2,139 @@ import streamlit as st
 import pandas as pd
 import joblib
 import base64
-import os
 from difflib import get_close_matches
 
-# ---------------------------- PAGE CONFIG ----------------------------
+# ------------------------ PAGE CONFIG ------------------------
 st.set_page_config(
     page_title="AFFERAZE",
     layout="wide",
     page_icon="🧬"
 )
 
-# ---------------------------- LOAD BACKGROUND IMAGE ----------------------------
+# ------------------------ BACKGROUND IMAGE ------------------------
 def get_base64(file_path):
     with open(file_path, "rb") as f:
         return base64.b64encode(f.read()).decode()
 
-img_base64 = get_base64("image.png")
+try:
+    img_base64 = get_base64("image.png")
+except:
+    img_base64 = ""
 
-# ---------------------------- CUSTOM CSS ----------------------------
 st.markdown(f"""
     <style>
     html, body, [data-testid="stAppViewContainer"] {{
         font-family: 'Garamond', serif;
         background-image: url("data:image/png;base64,{img_base64}");
         background-size: cover;
+        background-attachment: fixed;
+        height: 100vh;
+        overflow-y: scroll;
+    }}
+    [data-testid="stAppViewContainer"] {{
+        background-color: rgba(255, 255, 255, 0.88);
+        padding: 2rem;
+        border-radius: 15px;
+        align-items: center;
+    }}
+    .prediction-highlight {{
+        background-color: #eee;
+        padding: 1rem;
+        border-left: 5px solid #6a5acd;
+        border-radius: 10px;
+        font-size: 1.2rem;
+        font-weight: bold;
+        color: #2c2c2c;
     }}
     </style>
 """, unsafe_allow_html=True)
 
-st.title("🔍 Binding Affinity Predictor")
+# ------------------------ LOAD DATA ------------------------
+df = pd.read_csv("Cleaned_Autodock_Results.csv")
+df['PROTEIN-LIGAND'] = df['PROTEIN-LIGAND'].astype(str).str.strip().str.lower()
 
-# ---------------------------- MODEL LOADING ----------------------------
-model_path = os.path.join(os.path.dirname(__file__), "combined_model.pkl")
-energy_model = joblib.load(model_path)
+valid_proteins = ["stat", "ace", "mmp3", "tnf", "tlr4", "cyp27b1"]
+df['PROTEIN'] = df['PROTEIN-LIGAND'].apply(lambda x: x.split('-')[0])
+df['LIGAND'] = df['PROTEIN-LIGAND'].apply(lambda x: x.split('-')[1])
+df = df[df['PROTEIN'].isin(valid_proteins)]
 
-# ---------------------------- FILE UPLOAD ----------------------------
-st.header("📤 Upload Your Files")
+# Load descriptor CSV
+desc_df = pd.read_csv("pharmokinetics final.csv")
+desc_df.columns = desc_df.columns.str.strip().str.lower()
+desc_df.rename(columns={"compounds": "ligand"}, inplace=True)
+desc_df['ligand'] = desc_df['ligand'].astype(str).str.strip().str.lower()
 
-desc_file = st.file_uploader("Upload Descriptors CSV", type=["csv"])
-energy_file = st.file_uploader("Upload AutoDock Results CSV", type=["csv"])
+# Merge energy and descriptor data
+energy_df = df.copy()
+energy_df['LIGAND'] = energy_df['LIGAND'].astype(str).str.strip().str.lower()
+energy_df.rename(columns={"binding energy": "Binding Affinity"}, inplace=True)
 
-if desc_file and energy_file:
-    try:
-        desc_df = pd.read_csv(desc_file)
-        energy_df = pd.read_csv(energy_file)
+try:
+    combined_df = pd.merge(energy_df, desc_df, left_on="LIGAND", right_on="ligand")
+except:
+    combined_df = None
 
-        # Rename ligand name column in descriptors
-        if "Name" in desc_df.columns:
-            name_col = "Name"
-        elif "compounds" in desc_df.columns:
-            name_col = "compounds"
+# ------------------------ LOAD MODELS ------------------------
+energy_model = joblib.load("model_with_importance.pkl")
+descriptor_model = joblib.load("descriptor_model.pkl")
+combined_model = joblib.load("combined_model.pkl")
+
+# ------------------------ HEADER ------------------------
+st.markdown("# 🧬 AFFERAZE")
+st.markdown("Predict binding affinity using **energy values** or **molecular descriptors** 💊")
+st.markdown("---")
+
+# ------------------------ MODE SELECTOR ------------------------
+mode = st.radio("Choose Prediction Mode:", [
+    "🔬 Use Docking Energy Values",
+    "🧪 Use Molecular Descriptors",
+    "🧬 Combined Input (Descriptors + Energy Values)"
+])
+
+if mode == "🔬 Use Docking Energy Values":
+    st.markdown("### 🔍 Select Protein and Enter Ligand")
+    protein_input = st.selectbox("Choose a Protein", ["STAT", "ACE", "MMP3", "TNF", "TLR4", "CYP27B1"])
+    ligand_input = st.text_input("Enter Ligand Name:")
+
+    if st.button("🔬 Predict Binding Affinity"):
+        protein = protein_input.lower().strip()
+        ligand = ligand_input.lower().strip()
+        key = f"{protein}-{ligand}"
+
+        match = df[df['PROTEIN-LIGAND'] == key]
+        if not match.empty:
+            features = match[['Electrostatic energy', 'Torsional energy', 'vdw hb desolve energy', 'Intermol energy']]
+            features = features[energy_model.feature_names_in_]
+            pred = energy_model.predict(features)[0]
+            st.markdown(f"<div class='prediction-highlight'>📉 Predicted Binding Affinity: <b>{pred:.2f} kcal/mol</b></div>", unsafe_allow_html=True)
         else:
-            raise ValueError("❌ Could not find a column with ligand names in descriptor dataset.")
+            st.error("❌ No exact match found.")
 
-        desc_df.rename(columns={name_col: "Ligand"}, inplace=True)
+elif mode == "🧪 Use Molecular Descriptors":
+    st.markdown("### 🧪 Enter Descriptor Values")
+    input_vals = []
+    for feature in descriptor_model.feature_names_in_:
+        val = st.number_input(feature)
+        input_vals.append(val)
 
-        # Rename ligand column in energy
-        if "LIGAND" in energy_df.columns:
-            ligand_col = "LIGAND"
-        elif "PROTEIN-LIGAND" in energy_df.columns:
-            ligand_col = "PROTEIN-LIGAND"
-        else:
-            raise ValueError("❌ Could not find ligand name column in docking results.")
+    if st.button("🧪 Predict via Descriptors"):
+        df_input = pd.DataFrame([input_vals], columns=descriptor_model.feature_names_in_)
+        pred = descriptor_model.predict(df_input)[0]
+        st.markdown(f"<div class='prediction-highlight'>🧪 Predicted Binding Affinity: <b>{pred:.2f} kcal/mol</b></div>", unsafe_allow_html=True)
 
-        energy_df.rename(columns={ligand_col: "Ligand"}, inplace=True)
+elif mode == "🧬 Combined Input (Descriptors + Energy Values)":
+    st.markdown("### 🧬 Enter All Values")
+    energy_inputs = []
+    for col in ['Electrostatic energy', 'Torsional energy', 'vdw hb desolve energy', 'Intermol energy']:
+        energy_inputs.append(st.number_input(col))
 
-        # Rename binding energy if necessary
-        if "Binding Affinity" not in energy_df.columns and "binding energy" in energy_df.columns:
-            energy_df.rename(columns={"binding energy": "Binding Affinity"}, inplace=True)
+    descriptor_inputs = []
+    for feature in [f for f in combined_model.feature_names_in_ if f not in ['Electrostatic energy', 'Torsional energy', 'vdw hb desolve energy', 'Intermol energy']]:
+        descriptor_inputs.append(st.number_input(feature))
 
-        # Keep necessary columns
-        energy_cols = ['Electrostatic energy', 'Torsional energy', 'vdw hb desolve energy', 'Intermol energy']
-        descriptor_cols = ['molecular weight', 'logp', 'rotatable bonds', 'acceptor', 'donor', 'surface area', 'molar refractivity']
-        all_features = energy_cols + descriptor_cols
+    total_input = energy_inputs + descriptor_inputs
 
-        energy_df = energy_df[['Ligand'] + energy_cols + ['Binding Affinity']]
-        desc_df = desc_df[['Ligand'] + descriptor_cols]
-
-        # Merge
-        merged_df = pd.merge(energy_df, desc_df, on="Ligand", how="inner")
-
-        st.success(f"✅ Merged {len(merged_df)} compounds successfully!")
-
-        st.dataframe(merged_df)
-
-        if st.button("🔮 Predict Binding Affinity"):
-            X = merged_df[all_features]
-            preds = energy_model.predict(X)
-            merged_df["Predicted Affinity"] = preds
-            st.subheader("📈 Results")
-            st.dataframe(merged_df[["Ligand", "Binding Affinity", "Predicted Affinity"]])
-
-    except Exception as e:
-        st.error(f"❌ Error: {str(e)}")
-
-else:
-    st.info("👆 Please upload both descriptor and docking result CSV files.")
+    if st.button("🧬 Predict via Combined Model"):
+        df_comb = pd.DataFrame([total_input], columns=combined_model.feature_names_in_)
+        pred = combined_model.predict(df_comb)[0]
+        st.markdown(f"<div class='prediction-highlight'>📊 Combined Prediction: <b>{pred:.2f} kcal/mol</b></div>", unsafe_allow_html=True)

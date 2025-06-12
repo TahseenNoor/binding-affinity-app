@@ -75,9 +75,9 @@ except:
     combined_df = None
 
 # ------------------------ LOAD MODELS ------------------------
-energy_model = joblib.load("model_with_importance.pkl")
-descriptor_model = joblib.load("descriptor_model.pkl")
-combined_model = joblib.load("combined_model.pkl")
+energy_model = joblib.load("model_with_importance .pkl")
+descriptor_model = joblib.load("descriptor_model .pkl")
+combined_model = joblib.load("combined_model .pkl")
 
 # ------------------------ HEADER ------------------------
 st.markdown("# 🧬 AFFERAZE")

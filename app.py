@@ -5,7 +5,7 @@ import base64
 
 # ------------------------ PAGE CONFIG ------------------------
 st.set_page_config(
-    page_title="Binding Affinity Predictor",
+    page_title="Afferaze",
     layout="wide",
     page_icon="🧬"
 )
@@ -151,3 +151,4 @@ with col2:
     This predictive step accelerates the drug development process ⏩ and reduces the cost of experimental screening 📉, making it a key tool
     in computational biology and cheminformatics 🖥️.
     """)
+

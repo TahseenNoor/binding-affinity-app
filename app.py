@@ -5,7 +5,7 @@ import base64
 
 # ------------------------ PAGE CONFIG ------------------------
 st.set_page_config(
-    page_title="Afferaze",
+    page_title="Binding affinity predictor",
     layout="wide",
     page_icon="🧬"
 )
@@ -90,7 +90,7 @@ df = pd.read_csv("Cleaned_Autodock_Results.csv")
 model = joblib.load("model_with_importance.pkl")
 
 # ------------------------ HEADER ------------------------
-st.markdown("# 🧬 Binding Affinity Predictor")
+st.markdown("# 🧬 AFFERAZE")
 st.markdown("This AI-powered tool predicts binding affinity between a target protein and a compound. Optimized for drug discovery research and enhanced with biotech visual aesthetics.")
 st.markdown("---")
 
@@ -151,4 +151,5 @@ with col2:
     This predictive step accelerates the drug development process ⏩ and reduces the cost of experimental screening 📉, making it a key tool
     in computational biology and cheminformatics 🖥️.
     """)
+
 
